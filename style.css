@@ -239,3 +239,5 @@ button.small {
   padding: 4px 8px;
   min-width: auto;
 }
+
+#toastHost .toast button{font-size:12px; padding:4px 8px; border-radius:6px}
