@@ -8,7 +8,7 @@
 </head>
 <body>
   <div class="app">
-    <!-- 상단바 -->
+    <!-- 상단바(고정) -->
     <header class="topbar" role="banner">
       <button class="hamburger" id="btnMenu" aria-label="메뉴 열기" aria-controls="drawer" aria-expanded="false">☰</button>
       <div class="brand">My Desk</div>
@@ -21,6 +21,7 @@
         <a class="active" href="#todo" aria-current="page">✅ 할 일 리스트</a>
         <a href="#calendar">📅 캘린더 일정</a>
         <a href="#focus">⏱️ 순수공부 시간</a>
+        <a href="#goals">🎯 목표/루틴</a>
         <a href="#memo">📝 메모</a>
         <a href="#settings">⚙️ 설정</a>
       </div>
@@ -46,7 +47,7 @@
           <h2 id="cal-title">캘린더</h2>
           <div class="cal-toolbar">
             <button id="calPrev" aria-label="이전 달">◀</button>
-            <div id="calLabel" class="cal-label">2025. 08</div>
+            <div id="calLabel" class="cal-label">YYYY.MM</div>
             <button id="calNext" aria-label="다음 달">▶</button>
             <button id="calToday" class="secondary" aria-label="오늘로 이동">오늘</button>
           </div>
@@ -63,7 +64,7 @@
         <div id="dayPanel" class="day-panel" hidden>
           <div class="day-header">
             <div class="day-title">
-              <strong id="dayTitle">2025-08-01</strong>
+              <strong id="dayTitle">2025-01-01</strong>
               <span id="dayCount" class="muted"></span>
             </div>
             <div class="day-actions">
@@ -75,7 +76,7 @@
         </div>
       </section>
 
-      <!-- ⏱️ 순수공부 시간 -->
+      <!-- ✅ 순수공부 시간 -->
       <section id="focus" class="board" hidden aria-labelledby="focus-title">
         <header class="pane-head">
           <h2 id="focus-title">순수공부 시간</h2>
@@ -83,7 +84,6 @@
             <button id="focusStart" class="primary">▶︎ 타이머 시작</button>
           </div>
         </header>
-
         <div class="muted" style="margin-top:8px">
           타이머 시작 시 전체 화면으로 전환되고, 오버레이에 시간이 표시됩니다.
           앱을 벗어나면 자동으로 일시정지됩니다.
@@ -99,6 +99,22 @@
         </div>
       </section>
 
+      <!-- 🎯 목표/루틴 -->
+      <section id="goals" class="board" hidden aria-labelledby="goals-title">
+        <header class="pane-head">
+          <h2 id="goals-title">목표/루틴</h2>
+          <div class="goals-toolbar" style="display:flex; gap:8px; flex-wrap:wrap">
+            <button id="btnAddGoal" class="primary">+ 목표 추가</button>
+            <button id="btnAddRoutine" class="secondary">+ 루틴 추가</button>
+          </div>
+        </header>
+
+        <h3 style="margin-top:8px">목표</h3>
+        <div id="goalGrid" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:12px"></div>
+
+        <h3 style="margin-top:16px">루틴</h3>
+        <div id="routineList" style="display:flex; flex-direction:column; gap:8px"></div>
+      </section>
 
       <!-- 메모/설정 자리표시자 -->
       <section id="memo" class="board" hidden><h2>메모</h2></section>
@@ -113,6 +129,7 @@
       <a class="active" href="#todo">✅ 할 일 리스트</a>
       <a href="#calendar">📅 캘린더 일정</a>
       <a href="#focus">⏱️ 순수공부 시간</a>
+      <a href="#goals">🎯 목표/루틴</a>
       <a href="#memo">📝 메모</a>
       <a href="#settings">⚙️ 설정</a>
     </div>
@@ -121,38 +138,31 @@
   <!-- ✅ 토스트 호스트 -->
   <div id="toastHost" aria-live="polite" aria-atomic="true"></div>
 
-  <!-- ✅ 일정 생성/수정 모달 -->
+  <!-- ✅ 일정 생성/수정 모달 (todo.js가 사용) -->
   <dialog id="taskModal">
     <div class="modal-body" role="dialog" aria-labelledby="taskModalTitle">
       <div class="modal-head">
         <h3 id="taskModalTitle">일정 생성</h3>
         <button id="taskCancelBtn" aria-label="닫기">✕</button>
       </div>
-
       <form id="taskForm">
-        <label>
-          제목
+        <label>제목
           <input id="taskTitleInput" type="text" placeholder="무엇을 할까요?" autocomplete="off" />
         </label>
-
-        <label>
-          기한
+        <label>기한
           <input id="taskDueInput" type="date" />
         </label>
-
-        <label>
-          카테고리
+        <label>카테고리
           <select id="taskCategorySelect"></select>
         </label>
-
         <div class="modal-actions">
-          <button type="button" id="taskSaveBtn" class="primary">추가</button>
+          <button type="button" id="taskSaveBtn" class="primary">저장</button>
         </div>
       </form>
     </div>
   </dialog>
 
-  <!-- ✅ 카테고리 센터 모달 -->
+  <!-- ✅ 카테고리 센터 모달 (todo.js가 사용) -->
   <dialog id="categoryCenterModal">
     <div class="modal-body" role="dialog" aria-labelledby="catCenterTitle">
       <div class="modal-head">
@@ -165,27 +175,16 @@
         <button id="tabCreate" class="tab" role="tab" aria-selected="false">새로 만들기</button>
       </div>
 
-      <!-- 목록/관리 -->
       <section id="catTabManage" role="tabpanel">
-        <div class="cat-toolbar">
-          <input id="catSearchInput" type="search" placeholder="카테고리 검색" />
-          <select id="catSortSelect" title="정렬">
-            <option value="order">정렬: 사용자 순서</option>
-            <option value="name">정렬: 이름</option>
-            <option value="count">정렬: 사용 개수</option>
-          </select>
-        </div>
         <ul id="catCenterList" class="cat-center-list"></ul>
         <p class="muted" style="margin-top:8px">
           <small>기본(Inbox)은 삭제/이름변경할 수 없습니다. 삭제 시 해당 카테고리의 일정은 기본으로 이동합니다.</small>
         </p>
       </section>
 
-      <!-- 새로 만들기 -->
       <section id="catTabCreate" role="tabpanel" hidden>
         <form>
-          <label>
-            이름
+          <label>이름
             <input id="newCatName" type="text" placeholder="예) 공부, 운동" autocomplete="off">
           </label>
 
@@ -210,7 +209,101 @@
     </div>
   </dialog>
 
-  <!-- ✅ 포커스 오버레이 (일시정지/리셋/종료) -->
+  <!-- 🎯 목표 모달 (시간/체크 + 루틴 선택 필터) -->
+  <dialog id="goalModal">
+    <div class="modal-body" role="dialog" aria-labelledby="goalModalTitle">
+      <div class="modal-head">
+        <h3 id="goalModalTitle">목표 만들기</h3>
+        <button id="goalClose" aria-label="닫기">✕</button>
+      </div>
+
+      <form id="goalForm">
+        <p class="muted" style="margin:0 0 8px">
+          목표는 <strong>시간(분)</strong> 또는 <strong>체크(회)</strong>로 측정합니다.<br/>
+          체크 목표는 선택한 <strong>루틴 완료</strong>만 집계돼요. (선택 안 하면 전체 루틴 기준)
+        </p>
+
+        <label>제목
+          <input id="goalTitle" type="text" placeholder="예) 이번 주 600분 공부 / 이번 주 10회 운동" autocomplete="off"/>
+        </label>
+
+        <label>종류
+          <select id="goalKind">
+            <option value="time">시간(분)</option>
+            <option value="check">체크(회)</option>
+          </select>
+        </label>
+
+        <label>기간
+          <select id="goalPeriod">
+            <option value="weekly" selected>주간</option>
+            <option value="daily">일간</option>
+            <option value="monthly">월간</option>
+          </select>
+        </label>
+
+        <label id="goalTargetLabel">목표 시간(분)
+          <input id="goalTarget" type="number" min="1" step="1" placeholder="예) 600"/>
+        </label>
+
+        <!-- 시간 프리셋 -->
+        <div id="goalQuick" style="display:flex; gap:6px; flex-wrap:wrap; margin-top:6px"></div>
+
+        <!-- 체크 목표 전용: 루틴 선택 -->
+        <div id="goalRoutineFilterWrap" style="margin-top:10px; display:none">
+          <div style="margin-bottom:4px">집계할 루틴 선택(선택 안 하면 전체 루틴):</div>
+          <div id="goalRoutineList" style="display:flex; flex-wrap:wrap; gap:8px"></div>
+        </div>
+
+        <div class="modal-actions">
+          <button id="goalSave" type="submit" class="primary">저장</button>
+        </div>
+      </form>
+    </div>
+  </dialog>
+
+  <!-- 🔁 루틴 모달 (체크 단위 고정) -->
+  <dialog id="routineModal">
+    <div class="modal-body" role="dialog" aria-labelledby="routineModalTitle">
+      <div class="modal-head">
+        <h3 id="routineModalTitle">루틴 만들기</h3>
+        <button id="routineClose" aria-label="닫기">✕</button>
+      </div>
+      <form id="routineForm">
+        <p class="muted" style="margin:0 0 8px">루틴은 <strong>체크</strong>로 완료 여부만 관리합니다.</p>
+
+        <label>제목
+          <input id="routineTitle" type="text" placeholder="예) 월수금 운동" autocomplete="off"/>
+        </label>
+
+        <label>주기
+          <select id="routineFreq">
+            <option value="weekly" selected>매주</option>
+            <option value="daily">매일</option>
+          </select>
+        </label>
+
+        <div id="routineDaysWrap">
+          <div style="margin:6px 0 4px">요일(주간일 때)</div>
+          <div id="routineDays" style="display:flex; gap:6px; flex-wrap:wrap">
+            <label><input type="checkbox" value="1">월</label>
+            <label><input type="checkbox" value="2">화</label>
+            <label><input type="checkbox" value="3">수</label>
+            <label><input type="checkbox" value="4">목</label>
+            <label><input type="checkbox" value="5">금</label>
+            <label><input type="checkbox" value="6">토</label>
+            <label><input type="checkbox" value="7">일</label>
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button id="routineSave" type="submit" class="primary">저장</button>
+        </div>
+      </form>
+    </div>
+  </dialog>
+
+  <!-- ⏱️ 포커스 오버레이 -->
   <div id="focusOverlay" hidden>
     <div class="focus-overlay-inner">
       <div id="focusBanner" class="focus-banner" hidden>일시정지됨 (앱 이탈 감지)</div>
@@ -223,7 +316,7 @@
     </div>
   </div>
 
-  <!-- 메뉴/드로어 토글 & 해시 네비 -->
+  <!-- 메뉴/드로어 토글 & 해시 네비 (간단 스크립트) -->
   <script defer>
     (function(){
       const btn = document.getElementById('btnMenu');
@@ -260,9 +353,10 @@
     })();
   </script>
 
-  <!-- 외부 스크립트: defer 로드 -->
+  <!-- 외부 스크립트 -->
   <script src="todo.js" defer></script>
   <script src="calendar.js" defer></script>
   <script src="focus.js" defer></script>
+  <script src="goals.js" defer></script>
 </body>
 </html>

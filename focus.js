@@ -1,4 +1,4 @@
-// focus.js — 집중 타이머 오버레이 + 연속 이탈 기록 + Undo(세션 저장/전체삭제)
+// focus.js — 집중 타이머 오버레이 + 이탈 기록 + 종료시 Goals 토스트 연동
 (function(){
   function initFocus(){
     const startBtn   = document.getElementById('focusStart');
@@ -11,7 +11,7 @@
 
     const sumTotalEl = document.getElementById('focusSummaryTotal');
     const listEl     = document.getElementById('focusSessionList');
-    const clearBtn   = document.getElementById('focusClearLogs'); // (있으면 연결)
+    const clearBtn   = document.getElementById('focusClearLogs');
 
     if (!startBtn || !overlay || !timerEl || !pauseBtn || !resetBtn || !endBtn) return;
 
@@ -28,31 +28,13 @@
     function toastWithUndo(message, undoLabel, onUndo, timeout=6000){
       const host = document.getElementById('toastHost');
       if (!host) return;
-      const el = document.createElement('div');
-      el.className = 'toast';
-
-      const span = document.createElement('span');
-      span.textContent = message;
-
-      const btn = document.createElement('button');
-      btn.textContent = undoLabel || '되돌리기';
-      btn.style.marginLeft = '10px';
-
-      let settled = false;
-      const done = ()=>{
-        if (settled) return;
-        settled = true;
-        clearTimeout(timer);
-        el.remove();
-      };
-
-      btn.addEventListener('click', ()=>{
-        try { onUndo?.(); } finally { done(); }
-      });
-
-      el.append(span, btn);
-      host.appendChild(el);
-      const timer = setTimeout(done, timeout);
+      const el = document.createElement('div'); el.className = 'toast';
+      const span = document.createElement('span'); span.textContent = message;
+      const btn = document.createElement('button'); btn.textContent = undoLabel || '되돌리기'; btn.style.marginLeft='10px';
+      let settled=false; const done=()=>{ if(settled) return; settled=true; clearTimeout(timer); el.remove(); };
+      btn.addEventListener('click', ()=>{ try{ onUndo?.(); } finally{ done(); } });
+      el.append(span, btn); host.appendChild(el);
+      const timer=setTimeout(done, timeout);
     }
 
     // ===== 상태 =====
@@ -91,37 +73,25 @@
     // ===== 풀스크린 (가능할 때만) =====
     async function requestFS(){
       const el = document.documentElement;
-      try{
-        if (el.requestFullscreen) await el.requestFullscreen();
-        else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
-      }catch(_){}
+      try{ if (el.requestFullscreen) await el.requestFullscreen(); else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen(); }catch(_){}
     }
     async function exitFS(){
-      try{
-        if (document.fullscreenElement) await document.exitFullscreen();
-        else if (document.webkitFullscreenElement) document.webkitExitFullscreen?.();
-      }catch(_){}
+      try{ if (document.fullscreenElement) await document.exitFullscreen(); else if (document.webkitFullscreenElement) document.webkitExitFullscreen?.(); }catch(_){}
     }
 
     // ===== 저장/불러오기 + 요약 렌더 =====
-    function loadLogs(){
-      try { return JSON.parse(localStorage.getItem(LS_KEY)||'[]'); } catch{ return []; }
-    }
-    function saveLogs(arr){
-      localStorage.setItem(LS_KEY, JSON.stringify(arr));
-    }
+    function loadLogs(){ try { return JSON.parse(localStorage.getItem(LS_KEY)||'[]'); } catch{ return []; } }
+    function saveLogs(arr){ localStorage.setItem(LS_KEY, JSON.stringify(arr)); }
     function renderSummary(){
       if (!sumTotalEl || !listEl) return;
       const logs = loadLogs();
       const now = Date.now();
       const todays = logs.filter(x => isSameDay(x.start, now));
-
       if (todays.length === 0){
         sumTotalEl.textContent = '오늘 기록이 없습니다.';
         listEl.innerHTML = '';
         return;
       }
-
       const totalMs = todays.reduce((acc,x)=> acc + (x.durationMs||0), 0);
       const totalLeaves = todays.reduce((acc,x)=> acc + ((x.leaves?.length)||0), 0);
       const totalAway = todays.reduce((acc,x)=> acc + sumLeaveMs(x.leaves||[]), 0);
@@ -236,7 +206,6 @@
       toast('↺ 리셋');
       pauseBtn.textContent = '▶︎ 재개';
       pauseBtn.classList.remove('secondary'); pauseBtn.classList.add('primary');
-      // leaves는 세션 내 유지 (원하면 여기서 초기화)
     }
 
     async function endTimer(){
@@ -276,6 +245,9 @@
 
       renderSummary();
 
+      // Goals 연동: 시간형 목표 남은 시간 토스트
+      try { window.Goals?.onFocusEnded(justAddedLog); } catch(_){}
+
       // ✅ 종료 시 Undo (방금 저장한 로그 삭제)
       if (justAddedLog){
         toastWithUndo(`세션 종료: 집중 ${fmtHMS(justAddedLog.durationMs)} · 이탈 ${(justAddedLog.leaves||[]).length}회`, '되돌리기', ()=>{
@@ -296,7 +268,7 @@
       }
     }
 
-    // ===== 로그 전체 삭제 (있을 때만) + Undo =====
+    // ===== 로그 전체 삭제 + Undo =====
     function clearLogs(){
       const prev = loadLogs();
       if (!prev.length){ toast('삭제할 로그가 없습니다'); return; }
@@ -312,11 +284,10 @@
     clearBtn?.addEventListener('click', clearLogs);
 
     // ===== 이벤트 =====
-    // 앱 이탈 감지 (hidden → 이탈 시작 / visible → 이탈 종료)
+    // 앱 이탈 감지
     document.addEventListener('visibilitychange', ()=>{
       if (!startAtReal) return; // 세션 외 무시
       const now = Date.now();
-
       if (document.hidden){
         // 이탈 시작
         if (isRunning && !currentLeave){
@@ -326,7 +297,7 @@
           pauseTimer(`일시정지됨 (앱 이탈 감지 ${leaves.length}회)`);
         }
       } else {
-        // 복귀 → 열린 이탈 닫기
+        // 복귀
         if (currentLeave && !currentLeave.resumedAt){
           currentLeave.resumedAt = now;
           currentLeave = null;
@@ -335,15 +306,10 @@
     });
 
     // 시작 버튼
-    startBtn.addEventListener('click', async ()=>{
-      await startTimer();
-    });
+    startBtn.addEventListener('click', async ()=>{ await startTimer(); });
 
     // 오버레이 컨트롤
-    pauseBtn.addEventListener('click', async ()=>{
-      if (isRunning) await pauseTimer();
-      else await resumeTimer();
-    });
+    pauseBtn.addEventListener('click', async ()=>{ if (isRunning) await pauseTimer(); else await resumeTimer(); });
     resetBtn.addEventListener('click', resetTimer);
     endBtn.addEventListener('click', endTimer);
 
