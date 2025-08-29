@@ -15,10 +15,10 @@
       <div class="spacer"></div>
     </header>
 
-    <!-- 데스크톱/태블릿: 고정 사이드바 -->
+    <!-- 고정 사이드바 (태블릿/데스크톱) -->
     <nav class="sidebar" aria-label="사이드바 메뉴">
       <div class="nav">
-        <a class="active" href="#todo"   aria-current="page">✅ 할 일 리스트</a>
+        <a class="active" href="#todo" aria-current="page">✅ 할 일 리스트</a>
         <a href="#calendar">📅 캘린더 일정</a>
         <a href="#focus">⏱️ 순수공부 시간</a>
         <a href="#memo">📝 메모</a>
@@ -28,7 +28,6 @@
 
     <!-- 메인 -->
     <main class="main" role="main">
-      <!-- 할 일 -->
       <section id="todo" class="board" aria-labelledby="todo-title">
         <header class="pane-head">
           <h2 id="todo-title">할 일 리스트</h2>
@@ -67,24 +66,14 @@
         <h3 id="taskModalTitle">일정 생성</h3>
         <button id="taskCancelBtn" value="cancel" aria-label="닫기">✕</button>
       </header>
-
-      <label>제목
-        <input id="taskTitleInput" placeholder="예: 수학 문제풀이" maxlength="120" required>
-      </label>
-      <label>기한
-        <input id="taskDueInput" type="date">
-      </label>
-      <label>카테고리
-        <select id="taskCategorySelect"></select>
-      </label>
-
-      <footer class="modal-actions">
-        <button id="taskSaveBtn" class="primary" value="default">추가</button>
-      </footer>
+      <label>제목 <input id="taskTitleInput" maxlength="120" required placeholder="예: 수학 문제풀이"></label>
+      <label>기한 <input id="taskDueInput" type="date"></label>
+      <label>카테고리 <select id="taskCategorySelect"></select></label>
+      <footer class="modal-actions"><button id="taskSaveBtn" class="primary" value="default">추가</button></footer>
     </form>
   </dialog>
 
-  <!-- 모달: 카테고리 센터(탭 2개) -->
+  <!-- 모달: 카테고리 센터(탭) -->
   <dialog id="categoryCenterModal" aria-labelledby="catCenterTitle">
     <div class="modal-body">
       <header class="modal-head">
@@ -111,9 +100,7 @@
       </section>
 
       <section id="catTabCreate" class="tab-panel" role="tabpanel" aria-labelledby="tabCreate" hidden>
-        <label>이름
-          <input id="newCatName" placeholder="예: 공부" maxlength="40" required>
-        </label>
+        <label>이름 <input id="newCatName" maxlength="40" required placeholder="예: 공부"></label>
         <label>색상</label>
         <div id="newCatPalette" class="palette">
           <button type="button" data-color="#3b82f6" style="background:#3b82f6" aria-label="파랑"></button>
@@ -126,9 +113,7 @@
         </div>
         <input id="newCatColor" type="hidden" value="#3b82f6" />
         <input id="newCatColorPicker" type="color" value="#3b82f6" class="visually-hidden" />
-        <footer class="modal-actions">
-          <button id="newCatSaveBtn" class="primary">저장</button>
-        </footer>
+        <footer class="modal-actions"><button id="newCatSaveBtn" class="primary">저장</button></footer>
       </section>
     </div>
   </dialog>
@@ -136,7 +121,7 @@
   <!-- 토스트 -->
   <div id="toastHost" aria-live="polite" aria-atomic="true"></div>
 
-  <!-- 네비(햄버거) + 우클릭 방지 -->
+  <!-- 메뉴/드로어 + 우클릭 방지 + NAV -->
   <script>
     (function(){
       const btn = document.getElementById('btnMenu');
@@ -150,6 +135,28 @@
       window.addEventListener('keydown', e=>{ if(e.key==='Escape' && document.body.classList.contains('menu-open')) closeMenu(); });
     })();
     window.addEventListener('contextmenu', e=> e.preventDefault());
+
+    // 해시 네비(사이드바/드로어 공통)
+    (function(){
+      function showSection(id){
+        document.querySelectorAll('main .board').forEach(s => s.hidden = true);
+        const el = document.getElementById(id);
+        if (el) el.hidden = false;
+        document.querySelectorAll('.nav a').forEach(a => {
+          const match = a.getAttribute('href') === '#' + id;
+          a.classList.toggle('active', match);
+          if (match) a.setAttribute('aria-current','page'); else a.removeAttribute('aria-current');
+        });
+      }
+      function onHash(){ showSection((location.hash || '#todo').slice(1)); }
+      document.querySelectorAll('.nav a').forEach(a=>{
+        a.addEventListener('click', (e)=>{
+          const href = a.getAttribute('href'); if(href && href.startsWith('#')){ e.preventDefault(); location.hash = href; }
+        });
+      });
+      window.addEventListener('hashchange', onHash);
+      onHash();
+    })();
   </script>
 
   <script src="todo.js"></script>
