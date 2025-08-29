@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>My Desk</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app">
+    <!-- 상단바 -->
+    <header class="topbar" role="banner">
+      <button class="hamburger" id="btnMenu" aria-label="메뉴 열기" aria-controls="drawer" aria-expanded="false">☰</button>
+      <div class="brand">My Desk</div>
+      <div class="spacer"></div>
+    </header>
+
+    <!-- 데스크톱/태블릿: 고정 사이드바 -->
+    <nav class="sidebar" aria-label="사이드바 메뉴">
+      <div class="nav">
+        <a class="active" href="#todo"   aria-current="page">✅ 할 일 리스트</a>
+        <a href="#calendar">📅 캘린더 일정</a>
+        <a href="#focus">⏱️ 순수공부 시간</a>
+        <a href="#memo">📝 메모</a>
+        <a href="#settings">⚙️ 설정</a>
+      </div>
+    </nav>
+
+    <!-- 메인 -->
+    <main class="main" id="main" role="main">
+      <!-- 할 일 섹션 -->
+      <section id="todo" class="board" aria-labelledby="todo-title">
+        <header class="pane-head">
+          <h2 id="todo-title">할 일 리스트</h2>
+          <div class="todo-toolbar">
+            <button id="btnCreateTask" class="primary" aria-label="일정 생성">➕ 일정 생성</button>
+            <button id="btnCreateCategory" class="secondary" aria-label="카테고리 생성">🏷️ 카테고리 생성</button>
+            <button id="btnManageCategories" class="secondary" aria-label="카테고리 관리">🗂️ 카테고리 관리</button>
+          </div>
+        </header>
+
+        <!-- 할 일 목록 -->
+        <div id="taskList" role="list" aria-label="할 일 목록"></div>
+      </section>
+
+      <!-- 캘린더 섹션 -->
+      <section id="calendar" class="board" aria-labelledby="cal-title" hidden>
+        <h2 id="cal-title">캘린더 일정</h2>
+      </section>
+
+      <!-- 공부 시간 섹션 -->
+      <section id="focus" class="board" aria-labelledby="focus-title" hidden>
+        <h2 id="focus-title">순수공부 시간</h2>
+      </section>
+
+      <!-- 메모 섹션 -->
+      <section id="memo" class="board" aria-labelledby="memo-title" hidden>
+        <h2 id="memo-title">메모</h2>
+      </section>
+
+      <!-- 설정 섹션 -->
+      <section id="settings" class="board" aria-labelledby="settings-title" hidden>
+        <h2 id="settings-title">설정</h2>
+      </section>
+    </main>
+  </div>
+
+  <!-- 모바일: 오프캔버스 사이드바 + 배경 -->
+  <div class="backdrop" id="backdrop" hidden></div>
+  <nav class="sidebar-drawer" id="drawer" aria-label="사이드바 메뉴(오프캔버스)" hidden>
+    <div class="nav">
+      <a class="active" href="#todo">✅ 할 일 리스트</a>
+      <a href="#calendar">📅 캘린더 일정</a>
+      <a href="#focus">⏱️ 순수공부 시간</a>
+      <a href="#memo">📝 메모</a>
+      <a href="#settings">⚙️ 설정</a>
+    </div>
+  </nav>
+
+  <!-- 모달: 일정 생성 (우선순위 없음) -->
+  <dialog id="taskModal" aria-labelledby="taskModalTitle">
+    <form method="dialog" class="modal-body">
+      <header class="modal-head">
+        <h3 id="taskModalTitle">일정 생성</h3>
+        <button id="taskCancelBtn" value="cancel" aria-label="닫기">✕</button>
+      </header>
+
+      <label>제목
+        <input id="taskTitleInput" placeholder="예: 수학 문제풀이" maxlength="120" required>
+      </label>
+
+      <label>기한
+        <input id="taskDueInput" type="date">
+      </label>
+
+      <label>카테고리
+        <select id="taskCategorySelect"></select>
+      </label>
+
+      <footer class="modal-actions">
+        <button id="taskSaveBtn" class="primary" value="default">추가</button>
+      </footer>
+    </form>
+  </dialog>
+
+  <!-- 모달: 카테고리 생성 (팔레트 + 자유선택) -->
+  <dialog id="categoryModal" aria-labelledby="categoryModalTitle">
+    <form method="dialog" class="modal-body">
+      <header class="modal-head">
+        <h3 id="categoryModalTitle">카테고리 생성</h3>
+        <button id="catCancelBtn" value="cancel" aria-label="닫기">✕</button>
+      </header>
+
+      <label>이름
+        <input id="catNameInput" placeholder="예: 공부" maxlength="40" required>
+      </label>
+
+      <!-- 팔레트 + 기타 버튼 -->
+      <label>색상</label>
+      <div id="catColorPalette" class="palette">
+        <button type="button" data-color="#3b82f6" style="background:#3b82f6" aria-label="파랑"></button>
+        <button type="button" data-color="#22c55e" style="background:#22c55e" aria-label="초록"></button>
+        <button type="button" data-color="#f59e0b" style="background:#f59e0b" aria-label="주황"></button>
+        <button type="button" data-color="#ef4444" style="background:#ef4444" aria-label="빨강"></button>
+        <button type="button" data-color="#a855f7" style="background:#a855f7" aria-label="보라"></button>
+        <button type="button" data-color="#64748b" style="background:#64748b" aria-label="회청"></button>
+        <button type="button" id="catColorMore" class="more" aria-label="기타 색상">…</button>
+      </div>
+      <input id="catColorInput" type="hidden" value="#3b82f6" />
+      <input id="catColorPicker" type="color" value="#3b82f6" class="visually-hidden" />
+
+      <footer class="modal-actions">
+        <button id="catSaveBtn" class="primary" value="default">저장</button>
+      </footer>
+    </form>
+  </dialog>
+
+  <!-- 모달: 카테고리 관리(목록/삭제) -->
+  <dialog id="categoryManageModal" aria-labelledby="categoryManageModalTitle">
+    <form method="dialog" class="modal-body">
+      <header class="modal-head">
+        <h3 id="categoryManageModalTitle">카테고리 관리</h3>
+        <button id="catManageCloseBtn" value="cancel" aria-label="닫기">✕</button>
+      </header>
+
+      <ul id="catList" aria-label="카테고리 목록" class="cat-list"></ul>
+
+      <p class="hint">
+        기본 Inbox는 삭제할 수 없습니다. 카테고리를 삭제하면 해당 일정은 Inbox로 이동합니다.
+      </p>
+    </form>
+  </dialog>
+
+  <!-- 토스트 영역 -->
+  <div id="toastHost" aria-live="polite" aria-atomic="true"></div>
+
+  <!-- (네비게이션 전용) 사이드바/해시 전환 스크립트 -->
+  <script>
+    // 햄버거: 오프캔버스 열고 닫기
+    (function(){
+      const btn = document.getElementById('btnMenu');
+      const drawer = document.getElementById('drawer');
+      const backdrop = document.getElementById('backdrop');
+
+      function openMenu(){
+        document.body.classList.add('menu-open');
+        btn?.setAttribute('aria-expanded','true');
+        drawer.hidden = false; backdrop.hidden = false;
+        setTimeout(()=> drawer.querySelector('a')?.focus(), 0);
+      }
+      function closeMenu(){
+        document.body.classList.remove('menu-open');
+        btn?.setAttribute('aria-expanded','false');
+        const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        if (!reduce){ setTimeout(()=>{ drawer.hidden = true; backdrop.hidden = true; }, 200); }
+        else { drawer.hidden = true; backdrop.hidden = true; }
+      }
+      btn?.addEventListener('click', ()=>{
+        const open = document.body.classList.contains('menu-open');
+        open ? closeMenu() : openMenu();
+      });
+      backdrop?.addEventListener('click', closeMenu);
+      drawer?.addEventListener('click', (e)=>{ if (e.target.tagName === 'A') closeMenu(); });
+      window.addEventListener('keydown', (e)=>{ if (e.key === 'Escape' && document.body.classList.contains('menu-open')) closeMenu(); });
+    })();
+
+    // 섹션 표시/숨김 (해시 기반)
+    (function(){
+      function showSection(id){
+        document.querySelectorAll('main .board').forEach(s => s.hidden = true);
+        const el = document.getElementById(id);
+        if (el) el.hidden = false;
+        // 사이드바 활성화 동기화
+        document.querySelectorAll('.nav a').forEach(a => {
+          a.classList.toggle('active', a.getAttribute('href') === '#' + id);
+          if (a.classList.contains('active')) a.setAttribute('aria-current','page');
+          else a.removeAttribute('aria-current');
+        });
+      }
+      window.addEventListener('hashchange', ()=>{
+        const id = (location.hash || '#todo').slice(1);
+        showSection(id);
+      });
+      showSection((location.hash || '#todo').slice(1)); // 초기
+    })();
+  </script>
+
+  <!-- 할 일 리스트 전용 기능 -->
+  <script src="todo.js"></script>
+</body>
+</html>
