@@ -91,7 +91,10 @@
 
         <!-- ✅ 세션 요약/히스토리 -->
         <div id="focusSummary" style="margin-top:12px">
-          <div id="focusSummaryTotal" class="muted">오늘 기록이 없습니다.</div>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px">
+            <div id="focusSummaryTotal" class="muted">오늘 기록이 없습니다.</div>
+            <button id="focusClearLogs" class="secondary small">🗑 전체 삭제</button>
+          </div>
           <ul id="focusSessionList" style="list-style:none; padding:0; margin:8px 0 0; display:flex; flex-direction:column; gap:6px"></ul>
         </div>
       </section>
