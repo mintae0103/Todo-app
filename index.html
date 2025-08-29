@@ -190,7 +190,6 @@
         document.querySelectorAll('main .board').forEach(s => s.hidden = true);
         const el = document.getElementById(id);
         if (el) el.hidden = false;
-        // 사이드바 활성화 동기화
         document.querySelectorAll('.nav a').forEach(a => {
           a.classList.toggle('active', a.getAttribute('href') === '#' + id);
           if (a.classList.contains('active')) a.setAttribute('aria-current','page');

@@ -28,7 +28,7 @@
   .spacer{flex:1}
   .hamburger{
     width:44px;height:44px;display:none;align-items:center;justify-content:center;
-    border:1px solid var(--border);border-radius:10px;background:#131a25;color:var(--text);cursor:pointer;
+    border:1px solid var(--border);border-radius:10px;background:#131a25;color:#f7f7f7;cursor:pointer;
   }
   
   /* 사이드바 */
@@ -104,9 +104,34 @@
   /* 토스트 */
   #toastHost{ position:fixed; top:16px; right:16px; display:flex; flex-direction:column; gap:8px; z-index:1000; }
   
-  /* 카드 공통 */
-  .task-row{ overflow:hidden; } /* 넘침 방지 */
-  .task-row span, .task-row button { white-space:nowrap; } /* 줄바꿈 방지 */
+  /* ===== 카드: 상단(체크/제목/삭제) + 하단 메타(날짜·카테고리) ===== */
+  .task-row{
+    overflow:hidden;
+    display:grid;
+    grid-template-columns: 44px 1fr 44px;
+    grid-template-rows: auto auto;
+    grid-template-areas:
+      "check title del"
+      "check meta  del";
+    align-items:center;
+    gap:6px 10px;
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:10px;
+    margin:6px 0;
+    background:#11151e;
+    touch-action:none;
+  }
+  .task-row .check{ grid-area:check; }
+  .task-row .title{ grid-area:title; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .task-row .del{ grid-area:del; justify-self:end; }
+  .task-row .meta{ grid-area:meta; color:var(--muted); font-size:12px; display:flex; gap:8px; align-items:center; min-width:0; }
+  .task-row .meta .dot{ width:10px; height:10px; border-radius:50%; display:inline-block; }
+  .task-row .meta .cat-name{ max-width:40vw; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  
+  /* 버튼 크기 */
+  .task-row button{ min-width:44px; min-height:44px; }
+  .task-row .del, .task-row .check{ white-space:nowrap; }
   
   /* 반응형 */
   @media (max-width: 768px){
@@ -117,30 +142,27 @@
         "topbar"
         "main";
     }
-    .sidebar{ display:none }         /* 모바일: 기본 사이드바 숨김 */
-    .hamburger{ display:flex }       /* 햄버거 버튼 표시 */
-    .sidebar-drawer{ display:flex }  /* 오프캔버스 사용 */
+    .sidebar{ display:none }
+    .hamburger{ display:flex }
+    .sidebar-drawer{ display:flex }
     body.menu-open .sidebar-drawer{ transform:none }
     body.menu-open .backdrop{ opacity:1; pointer-events:auto }
   }
   
-  /* 아이폰: 툴바 한 줄로 잘 보이게 */
+  /* 아이폰: 툴바 한 줄로 보이게 */
   @media (max-width: 480px){
     .todo-toolbar{ flex-wrap:nowrap; overflow-x:auto; -webkit-overflow-scrolling:touch; gap:4px; }
     .todo-toolbar button{ font-size:13px; padding:6px 10px; border-radius:6px; flex:1; min-width:0; }
   
-    /* 카드 그리드 압축: 체크박스, 제목, 날짜, 카테고리, 삭제 */
+    /* 카드 압축 */
     .task-row{
-      grid-template-columns: 36px 1fr auto auto 36px !important;
-      gap:6px; padding:8px;
+      grid-template-columns: 36px 1fr 36px;
+      gap:4px 8px;
+      padding:8px;
+      border-radius:10px;
     }
-    .task-row button{
-      min-width:36px; min-height:36px; padding:6px 8px; border-radius:8px;
-    }
-    .task-row .date{ font-size:12px; }
-    .task-row .chip{
-      max-width:88px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
-    }
+    .task-row button{ min-width:36px; min-height:36px; padding:6px 8px; border-radius:8px; }
+    .task-row .meta{ font-size:11.5px; gap:6px; }
   }
   
   /* 접근성 */

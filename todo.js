@@ -1,4 +1,4 @@
-// === todo.js — 카테고리 생성/관리 + 기본 카테고리 삭제불가 + 카드 전체 드래그 정렬 ===
+// === todo.js — 메타 하단 모드(날짜 D-표기 + 카테고리 점+이름), 카테고리 관리, 드래그 정렬, 기본 카테고리 보호 ===
 
 // ---------- Utilities ----------
 const $  = (s, r=document) => r.querySelector(s);
@@ -90,6 +90,24 @@ const els = {
                       })(),
 };
 
+// ---------- Helpers ----------
+function fmtDate(ms){
+  if (!ms) return '';
+  const d = new Date(ms);
+  const y = d.getFullYear(), m = String(d.getMonth()+1).padStart(2,'0'), dd = String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${dd}`;
+}
+function dueBadge(ms){
+  if (!ms) return '';
+  const today = new Date(); today.setHours(0,0,0,0);
+  const due = new Date(ms); due.setHours(0,0,0,0);
+  const diff = Math.round((due - today)/86400000);
+  if (diff < 0) return '연체';
+  if (diff === 0) return '오늘';
+  return `D-${diff}`;
+}
+function dueText(ms){ return ms ? dueBadge(ms) : ''; } // 전 기기 공통 축약 표기
+
 // ---------- Renderers ----------
 function renderCategoryOptions(){
   if (!els.taskCat) return;
@@ -127,22 +145,6 @@ function renderCategoryManageList(){
     });
 }
 
-function fmtDate(ms){
-  if (!ms) return '';
-  const d = new Date(ms);
-  const y = d.getFullYear(), m = String(d.getMonth()+1).padStart(2,'0'), dd = String(d.getDate()).padStart(2,'0');
-  return `${y}-${m}-${dd}`;
-}
-function dueBadge(ms){
-  if (!ms) return '';
-  const today = new Date(); today.setHours(0,0,0,0);
-  const due = new Date(ms); due.setHours(0,0,0,0);
-  const diff = Math.round((due - today)/86400000);
-  if (diff < 0) return '연체';
-  if (diff === 0) return '오늘';
-  return `D-${diff}`;
-}
-
 function renderTasks(){
   const host = els.listHost;
   host.innerHTML = '';
@@ -153,59 +155,63 @@ function renderTasks(){
   });
 
   list.forEach(t=>{
-    const cat = categories.find(c=>c.id===t.categoryId);
+    const cat = categories.find(c=>c.id===t.categoryId) || { name:'Inbox', color:'#3b82f6' };
+
+    // 행
     const row = document.createElement('div');
     row.className = 'task-row';
     row.dataset.id = t.id;
     row.setAttribute('role','listitem');
-    // 그리드: 체크박스, 제목, 날짜, 카테고리, 삭제
-    row.style.cssText = 'display:grid;grid-template-columns:44px 1fr auto auto 44px;align-items:center;gap:8px;border:1px solid #222933;border-radius:10px;padding:10px;margin:6px 0;background:#11151e;touch-action:none;overflow:hidden';
 
-    // 완료 토글 (드래그 제외)
+    // 체크(완료 토글)
     const btnDone = document.createElement('button');
     btnDone.textContent = t.done ? '✅' : '⬜️';
     btnDone.setAttribute('aria-pressed', String(!!t.done));
-    btnDone.className = 'no-drag';
-    btnDone.style.cssText='min-width:44px;min-height:44px';
+    btnDone.className = 'check no-drag';
     btnDone.addEventListener('click', ()=>{
       t.done = !t.done; t.updatedAt = Date.now(); saveAll(); renderTasks();
     });
 
-    // 제목 (ellipsis)
+    // 제목
     const title = document.createElement('div');
+    title.className = 'title';
     title.textContent = t.title;
-    title.style.cssText='min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap';
-    if (t.done) title.style.cssText += ';color:#9aa0a6;text-decoration:line-through';
+    if (t.done) title.style.cssText = 'color:#9aa0a6;text-decoration:line-through';
 
-    // 날짜
-    const due = document.createElement('div');
-    due.className = 'date';
-    due.style.cssText='font-size:12px;color:#9aa0a6;min-width:auto;text-align:right;white-space:nowrap';
-    due.textContent = t.dueAt ? `${fmtDate(t.dueAt)} (${dueBadge(t.dueAt)})` : '';
-
-    // 카테고리 칩
-    const chip = document.createElement('span');
-    chip.className = 'chip';
-    chip.textContent = cat ? cat.name : 'Inbox';
-    chip.style.cssText = `font-size:12px;padding:4px 8px;border-radius:999px;background:${cat?.color||'#3b82f6'};white-space:nowrap`;
-
-    // 삭제 (드래그 제외)
+    // 삭제
     const btnDel = document.createElement('button');
     btnDel.textContent = '🗑️';
     btnDel.setAttribute('aria-label','삭제');
-    btnDel.className = 'no-drag';
-    btnDel.style.cssText='min-width:44px;min-height:44px';
+    btnDel.className = 'del no-drag';
     btnDel.addEventListener('click', ()=>{
       const backup = { ...t };
       tasks = tasks.filter(x=>x.id!==t.id); saveAll(); renderTasks();
       toast('🗑️ 삭제됨','success',{ undo:()=>{ tasks.push(backup); saveAll(); renderTasks(); }});
     });
 
-    // ✅ 순서: 체크박스, 할일, 날짜, 카테고리, 삭제
-    row.append(btnDone, title, due, chip, btnDel);
+    // 하단 메타(날짜 축약 + 카테고리 점+이름)
+    const meta = document.createElement('div');
+    meta.className = 'meta';
+
+    const dueEl = document.createElement('span');
+    dueEl.className = 'date';
+    dueEl.textContent = dueText(t.dueAt);              // 축약 표기 (전 기기)
+    dueEl.title = t.dueAt ? fmtDate(t.dueAt) : '';     // 길게 누르면 절대날짜 툴팁
+
+    const dot = document.createElement('span');
+    dot.className = 'dot';
+    dot.style.background = cat.color;
+
+    const catName = document.createElement('span');
+    catName.className = 'cat-name';
+    catName.textContent = cat.name;
+
+    // 조립
+    meta.append(dueEl, dot, catName);
+    row.append(btnDone, title, btnDel, meta);
     host.appendChild(row);
 
-    // 카드 전체 드래그 가능 (버튼은 제외)
+    // 드래그 연결(카드 전체, 버튼 제외)
     enableRowDrag(row);
   });
 }
@@ -341,19 +347,23 @@ function enableRowDrag(rowEl){
     rowEl.style.visibility = 'hidden';
     els.listHost.insertBefore(ph, rowEl.nextSibling);
 
-    // ghost: 원래 그리드 한 줄 유지
+    // ghost: 실제 넓이/그리드 유지
     const ghost = rowEl.cloneNode(true);
     ghost.querySelectorAll('button').forEach(b=> b.setAttribute('disabled','true'));
     const rowStyle = window.getComputedStyle(rowEl);
     const gridCols = rowStyle.getPropertyValue('grid-template-columns');
+    const gridRows = rowStyle.getPropertyValue('grid-template-rows');
+    const gridAreas = rowStyle.getPropertyValue('grid-template-areas');
     ghost.style.cssText = `
       position:fixed; left:${rowRect.left}px; top:${rowRect.top}px;
       width:${rowRect.width}px; height:${rowRect.height}px;
       z-index:9999; pointer-events:none; opacity:.98; transform:translateY(0);
-      box-shadow:0 12px 32px rgba(0,0,0,.35); border:1px solid #2a3140; background:#11151e; border-radius:10px;
-      display:grid; align-items:center; gap:8px;
+      box-shadow:0 12px 32px rgba(0,0,0,.35); border:1px solid #2a3140; background:#11151e; border-radius:12px;
+      display:grid; align-items:center; gap:6px 10px;
     `;
     ghost.style.gridTemplateColumns = gridCols;
+    ghost.style.gridTemplateRows    = gridRows;
+    ghost.style.gridTemplateAreas   = gridAreas;
 
     document.body.appendChild(ghost);
     els.listHost.classList.add('dragging');
