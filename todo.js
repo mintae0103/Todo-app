@@ -141,8 +141,12 @@ function selectPalette(container, value){
 /* ===== 렌더링 (카테고리 그룹) ===== */
 function renderCategoryOptions(){
   els.taskCat.innerHTML = categories
-    .slice().sort((a,b)=>(a.order??0)-(b.order??0))
-    .map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
+    .slice()
+    .sort((a,b)=>(a.order??0)-(b.order??0))
+    .map(c=>{
+      const name = (c.id === 'inbox') ? '기본' : c.name;
+      return `<option value="${c.id}">${name}</option>`;
+    }).join('');
 }
 
 function renderTasks(){
