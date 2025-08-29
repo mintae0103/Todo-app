@@ -75,7 +75,7 @@
         </div>
       </section>
 
-      <!-- ✅ 순수공부 시간 -->
+      <!-- ⏱️ 순수공부 시간 -->
       <section id="focus" class="board" hidden aria-labelledby="focus-title">
         <header class="pane-head">
           <h2 id="focus-title">순수공부 시간</h2>
@@ -83,11 +83,19 @@
             <button id="focusStart" class="primary">▶︎ 타이머 시작</button>
           </div>
         </header>
+
         <div class="muted" style="margin-top:8px">
           타이머 시작 시 전체 화면으로 전환되고, 오버레이에 시간이 표시됩니다.
           앱을 벗어나면 자동으로 일시정지됩니다.
         </div>
+
+        <!-- ✅ 세션 요약/히스토리 -->
+        <div id="focusSummary" style="margin-top:12px">
+          <div id="focusSummaryTotal" class="muted">오늘 기록이 없습니다.</div>
+          <ul id="focusSessionList" style="list-style:none; padding:0; margin:8px 0 0; display:flex; flex-direction:column; gap:6px"></ul>
+        </div>
       </section>
+
 
       <!-- 메모/설정 자리표시자 -->
       <section id="memo" class="board" hidden><h2>메모</h2></section>
