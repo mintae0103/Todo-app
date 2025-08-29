@@ -136,3 +136,51 @@ body.drag-lock .main{ touch-action:none; }
 /* 접근성 */
 a:focus-visible,button:focus-visible{outline:2px solid var(--accent); outline-offset:2px; border-radius:8px}
 @media (prefers-reduced-motion:reduce){ .sidebar-drawer,.backdrop{transition:none} }
+
+
+/* === Calendar (추가) === */
+.cal-head{display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:10px}
+.cal-toolbar{display:flex; align-items:center; gap:8px; flex-wrap:wrap}
+.cal-label{min-width:110px; text-align:center; font-weight:700}
+
+.cal-grid{display:flex; flex-direction:column; gap:6px}
+.cal-weekdays{display:grid; grid-template-columns:repeat(7,1fr); gap:6px; color:var(--muted); font-size:12px}
+.cal-weekdays span{padding:6px 4px; text-align:center; border-radius:8px; background:#10151f; border:1px solid var(--border)}
+
+.cal-cells{display:grid; grid-template-columns:repeat(7,1fr); gap:6px}
+.cal-cell{
+  position:relative; min-height:92px; border:1px solid var(--border); border-radius:10px;
+  background:#11151e; padding:6px; display:flex; flex-direction:column; gap:4px;
+}
+.cal-cell.other{opacity:.5}
+.cal-cell .date{font-size:12px; color:var(--muted); display:flex; align-items:center; justify-content:space-between; gap:6px}
+.cal-cell.today{outline:2px solid var(--accent); outline-offset:-2px}
+
+.cal-chip{
+  display:flex; align-items:center; gap:6px; padding:6px 8px; border-radius:8px;
+  background:#131a25; border:1px solid var(--border); font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  touch-action:none; /* 드래그시 */
+}
+.cal-chip .dot{width:10px; height:10px; border-radius:50%; flex:0 0 auto}
+.cal-more{font-size:12px; color:var(--muted)}
+
+.day-panel{
+  margin-top:12px; border:1px solid var(--border); border-radius:12px; background:#11151e; padding:10px;
+}
+.day-header{display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px}
+.day-title{display:flex; align-items:center; gap:8px}
+.day-actions{display:flex; align-items:center; gap:8px}
+.day-list{display:flex; flex-direction:column; gap:8px}
+.day-item{display:flex; align-items:center; justify-content:space-between; gap:8px; border:1px solid var(--border); border-radius:10px; background:#10151f; padding:8px}
+.day-item .left{display:flex; align-items:center; gap:8px; min-width:0}
+.day-item .dot{width:10px;height:10px;border-radius:50%}
+.day-item .title{min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.day-item .actions{display:flex; gap:6px}
+.muted{color:var(--muted)}
+
+@media (max-width:480px){
+  .cal-cell{min-height:84px}
+  .cal-chip{font-size:11px; padding:5px 6px}
+  .cal-weekdays{font-size:11px}
+  .day-item{padding:6px}
+}

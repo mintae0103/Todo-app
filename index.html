@@ -39,7 +39,41 @@
         <div id="taskList" role="list" aria-label="할 일 목록"></div>
       </section>
 
-      <section id="calendar" class="board" hidden><h2>캘린더 일정</h2></section>
+      <!-- ✅ 캘린더: 월간 뷰 + Day 패널 -->
+      <section id="calendar" class="board" hidden aria-labelledby="cal-title">
+        <header class="cal-head">
+          <h2 id="cal-title">캘린더</h2>
+          <div class="cal-toolbar">
+            <button id="calPrev" aria-label="이전 달">◀</button>
+            <div id="calLabel" class="cal-label">2025. 08</div>
+            <button id="calNext" aria-label="다음 달">▶</button>
+            <button id="calToday" class="secondary" aria-label="오늘로 이동">오늘</button>
+          </div>
+        </header>
+
+        <div class="cal-grid" role="grid" aria-label="월간 달력">
+          <div class="cal-weekdays" aria-hidden="true">
+            <span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span><span>일</span>
+          </div>
+          <div id="calCells" class="cal-cells"></div>
+        </div>
+
+        <!-- Day 패널 -->
+        <div id="dayPanel" class="day-panel" hidden>
+          <div class="day-header">
+            <div class="day-title">
+              <strong id="dayTitle">2025-08-01</strong>
+              <span id="dayCount" class="muted"></span>
+            </div>
+            <div class="day-actions">
+              <button id="dayAdd" class="primary">+ 이 날짜에 추가</button>
+              <button id="dayClose" aria-label="닫기">✕</button>
+            </div>
+          </div>
+          <div id="dayList" class="day-list" role="list"></div>
+        </div>
+      </section>
+
       <section id="focus" class="board" hidden><h2>순수공부 시간</h2></section>
       <section id="memo" class="board" hidden><h2>메모</h2></section>
       <section id="settings" class="board" hidden><h2>설정</h2></section>
@@ -58,69 +92,10 @@
     </div>
   </nav>
 
-  <!-- 모달: 일정 생성/수정 공용 -->
-  <dialog id="taskModal" aria-labelledby="taskModalTitle">
-    <form method="dialog" class="modal-body">
-      <header class="modal-head">
-        <h3 id="taskModalTitle">일정 생성</h3>
-        <button id="taskCancelBtn" value="cancel" aria-label="닫기">✕</button>
-      </header>
-      <label>제목 <input id="taskTitleInput" maxlength="120" required placeholder="예: 수학 문제풀이"></label>
-      <label>기한 <input id="taskDueInput" type="date"></label>
-      <label>카테고리 <select id="taskCategorySelect"></select></label>
-      <footer class="modal-actions"><button id="taskSaveBtn" class="primary" value="default">추가</button></footer>
-    </form>
-  </dialog>
-
-  <!-- 모달: 카테고리 센터 -->
-  <dialog id="categoryCenterModal" aria-labelledby="catCenterTitle">
-    <div class="modal-body">
-      <header class="modal-head">
-        <h3 id="catCenterTitle">카테고리</h3>
-        <button id="catCenterCloseBtn" value="cancel" aria-label="닫기">✕</button>
-      </header>
-
-      <div class="tabs" role="tablist" aria-label="카테고리 탭">
-        <button class="tab active" role="tab" aria-selected="true" aria-controls="catTabManage" id="tabManage">목록/관리</button>
-        <button class="tab" role="tab" aria-selected="false" aria-controls="catTabCreate" id="tabCreate">새로 만들기</button>
-      </div>
-
-      <section id="catTabManage" class="tab-panel" role="tabpanel" aria-labelledby="tabManage">
-        <div class="cat-toolbar">
-          <input id="catSearchInput" placeholder="카테고리 검색" />
-          <select id="catSortSelect" aria-label="정렬">
-            <option value="order">정렬: 사용자 순서</option>
-            <option value="name">정렬: 이름</option>
-            <option value="count">정렬: 작업 개수</option>
-          </select>
-        </div>
-        <ul id="catCenterList" class="cat-center-list" aria-label="카테고리 목록"></ul>
-        <p class="hint">기본(Inbox)은 삭제/이름변경할 수 없습니다. 삭제 시 해당 카테고리의 일정은 기본으로 이동합니다.</p>
-      </section>
-
-      <section id="catTabCreate" class="tab-panel" role="tabpanel" aria-labelledby="tabCreate" hidden>
-        <label>이름 <input id="newCatName" maxlength="40" required placeholder="예: 공부"></label>
-        <label>색상</label>
-        <div id="newCatPalette" class="palette">
-          <button type="button" data-color="#3b82f6" style="background:#3b82f6" aria-label="파랑"></button>
-          <button type="button" data-color="#22c55e" style="background:#22c55e" aria-label="초록"></button>
-          <button type="button" data-color="#f59e0b" style="background:#f59e0b" aria-label="주황"></button>
-          <button type="button" data-color="#ef4444" style="background:#ef4444" aria-label="빨강"></button>
-          <button type="button" data-color="#a855f7" style="background:#a855f7" aria-label="보라"></button>
-          <button type="button" data-color="#64748b" style="background:#64748b" aria-label="회청"></button>
-          <button type="button" id="newCatMore" class="more" aria-label="기타 색상">…</button>
-        </div>
-        <input id="newCatColor" type="hidden" value="#3b82f6" />
-        <input id="newCatColorPicker" type="color" value="#3b82f6" class="visually-hidden" />
-        <footer class="modal-actions"><button id="newCatSaveBtn" class="primary">저장</button></footer>
-      </section>
-    </div>
-  </dialog>
-
-  <!-- 토스트 -->
+  <!-- 토스트 호스트 (todo.js에서 사용) -->
   <div id="toastHost" aria-live="polite" aria-atomic="true"></div>
 
-  <!-- 메뉴/드로어 + 우클릭 방지 + NAV -->
+  <!-- 메뉴/드로어 + NAV (기존) -->
   <script>
     (function(){
       const btn = document.getElementById('btnMenu');
@@ -135,7 +110,6 @@
     })();
     window.addEventListener('contextmenu', e=> e.preventDefault());
 
-    // 해시 네비(사이드바/드로어 공통)
     (function(){
       function showSection(id){
         document.querySelectorAll('main .board').forEach(s => s.hidden = true);
@@ -158,6 +132,8 @@
     })();
   </script>
 
+  <!-- 기존 todo.js 다음에 캘린더 로드 -->
   <script src="todo.js"></script>
+  <script src="calendar.js"></script>
 </body>
 </html>
