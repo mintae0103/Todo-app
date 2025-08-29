@@ -1,22 +1,21 @@
-// === todo.js — 모바일 모달 폴백 + 카테고리/할일 드래그 + D+ 표기 + 스크롤잠금 ===
+// === todo.js — 드래그(행/카테고리) + 스크롤잠금 + D+/D- + 색상변경 + 편집 모달 재사용 + 네비 대응 ===
 const $  = (s, r=document) => r.querySelector(s);
 const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
 const uid = () => (crypto?.randomUUID?.() || String(Date.now())+Math.random().toString(16).slice(2));
 
 const LS = { tasks:'td.tasks.v1', cats:'td.cats.v1' };
 let tasks = [], categories = [];
+let editingTaskId = null;
 
-/* ----- safe dialog helpers (모바일 폴백) ----- */
+/* ----- dialog helpers (모바일 폴백) ----- */
 function safeShowModal(dlg){
   if (dlg?.showModal) { try { dlg.showModal(); return; } catch(_){} }
-  dlg.setAttribute('open','');
-  dlg.style.display='block';
+  dlg.setAttribute('open',''); dlg.style.display='block';
 }
 function safeCloseModal(dlg){
   if (!dlg) return;
   if (dlg.close) { try { dlg.close(); return; } catch(_){} }
-  dlg.removeAttribute('open');
-  dlg.style.display='none';
+  dlg.removeAttribute('open'); dlg.style.display='none';
 }
 
 /* ----- drag scroll-lock helpers ----- */
@@ -90,6 +89,7 @@ const els = {
   taskCat: $('#taskCategorySelect'),
   taskSave: $('#taskSaveBtn'),
   taskCancel: $('#taskCancelBtn'),
+  taskModalTitle: $('#taskModalTitle'),
 
   dlgCatCenter: $('#categoryCenterModal'),
   catCenterClose: $('#catCenterCloseBtn'),
@@ -128,7 +128,7 @@ function dueBadge(ms){
   const today=new Date(); today.setHours(0,0,0,0);
   const due=new Date(ms); due.setHours(0,0,0,0);
   const diff=Math.round((due - today)/86400000);
-  if (diff < 0)  return `D+${Math.abs(diff)}`;   // 지남 → D+N
+  if (diff < 0)  return `D+${Math.abs(diff)}`;
   if (diff === 0) return '오늘';
   return `D-${diff}`;
 }
@@ -138,11 +138,10 @@ function selectPalette(container, value){
   if (b) b.classList.add('selected');
 }
 
-/* ===== 렌더링 (카테고리 그룹) ===== */
+/* ===== 렌더링 ===== */
 function renderCategoryOptions(){
   els.taskCat.innerHTML = categories
-    .slice()
-    .sort((a,b)=>(a.order??0)-(b.order??0))
+    .slice().sort((a,b)=>(a.order??0)-(b.order??0))
     .map(c=>{
       const name = (c.id === 'inbox') ? '기본' : c.name;
       return `<option value="${c.id}">${name}</option>`;
@@ -156,13 +155,15 @@ function renderTasks(){
   const catById = new Map(categories.map(c=>[c.id,c]));
   if (!catById.has('inbox')) catById.set('inbox', { id:'inbox', name:'Inbox', color:'#3b82f6', order:-1 });
 
-  const grouped = new Map(); // catId -> tasks[]
+  // 그룹핑
+  const grouped = new Map();
   tasks.forEach(t=>{
     const key = t.categoryId || 'inbox';
     if (!grouped.has(key)) grouped.set(key, []);
     grouped.get(key).push(t);
   });
 
+  // 카테고리 정렬
   const orderCats = [...grouped.keys()].sort((a,b)=>{
     const ca=catById.get(a), cb=catById.get(b);
     const oa=(ca?.order?? (a==='inbox'?-1:999)), ob=(cb?.order?? (b==='inbox'?-1:999));
@@ -205,13 +206,24 @@ function renderTasks(){
       title.className='title'; title.textContent=t.title;
       if (t.done) title.style.cssText='color:#9aa0a6;text-decoration:line-through';
 
+      // 수정/삭제 버튼 묶음 (오른쪽 영역)
+      const btnEdit=document.createElement('button');
+      btnEdit.className='no-drag'; btnEdit.setAttribute('aria-label','수정'); btnEdit.textContent='✏️';
       const btnDel=document.createElement('button');
-      btnDel.className='del no-drag'; btnDel.setAttribute('aria-label','삭제'); btnDel.textContent='🗑️';
-      btnDel.addEventListener('click',()=>{
+      btnDel.className='no-drag'; btnDel.setAttribute('aria-label','삭제'); btnDel.textContent='🗑️';
+
+      btnEdit.addEventListener('click', ()=> openTaskModal('edit', t));
+      btnDel.addEventListener('click', ()=>{
         const backup={...t};
         tasks=tasks.filter(x=>x.id!==t.id); saveAll(); renderTasks();
         toast('🗑️ 삭제됨','success',{undo:()=>{tasks.push(backup); saveAll(); renderTasks();}});
       });
+
+      const rightBox = document.createElement('div');
+      rightBox.className='del';
+      rightBox.style.display='flex';
+      rightBox.style.gap='6px';
+      rightBox.append(btnEdit, btnDel);
 
       const meta=document.createElement('div'); meta.className='meta';
       const dueEl=document.createElement('span'); dueEl.className='date';
@@ -220,7 +232,7 @@ function renderTasks(){
       const catName=document.createElement('span'); catName.className='cat-name'; catName.textContent=(cat.id==='inbox')?'기본':cat.name;
 
       meta.append(dueEl,mDot,catName);
-      row.append(btnDone,title,btnDel,meta);
+      row.append(btnDone,title,rightBox,meta);
       group.appendChild(row);
 
       enableRowDrag(row);
@@ -237,16 +249,14 @@ function enableCategoryDrag(groupEl, handleEl){
   const onDown = (e)=>{
     if (e.pointerType==='mouse' && e.button!==0) return;
 
-    // ▶︎ 롱프레스 대기 전에 '바로' 스크롤 잠금
-    let pressed = true;
-    let started = false;
+    // 롱프레스 전에 스크롤 잠금 (iOS pull-to-refresh 방지)
+    let pressed = true; let started = false;
     lockScroll();
 
     const startY = e.clientY ?? e.touches?.[0]?.clientY ?? 0;
     e.preventDefault();
 
     const start = (y0)=>{
-      // 실제 드래그 시작
       const rect = groupEl.getBoundingClientRect();
       const ph = document.createElement('div'); ph.className = 'placeholder'; ph.style.height = rect.height + 'px';
       groupEl.style.visibility='hidden';
@@ -266,18 +276,11 @@ function enableCategoryDrag(groupEl, handleEl){
       started = true;
     };
 
-    // 롱프레스 타이머 (살짝 줄여 반응성 개선)
     const pressTimer = setTimeout(()=>{ if(pressed) start(startY); }, 160);
 
     const onMove = (ev)=>{
       const y = ev.clientY ?? ev.touches?.[0]?.clientY ?? 0;
-
-      // 롱프레스 기다리는 중에 손가락이 많이 움직이면 '드래그 시작'으로 전환
-      if (!started && pressed && Math.abs(y - startY) > 6) {
-        clearTimeout(pressTimer);
-        start(startY);
-      }
-
+      if (!started && pressed && Math.abs(y - startY) > 6) { clearTimeout(pressTimer); start(startY); }
       if (!catDrag) return;
       const dy = y - catDrag.startY;
       catDrag.ghost.style.transform = `translateY(${dy}px)`;
@@ -293,53 +296,32 @@ function enableCategoryDrag(groupEl, handleEl){
           els.listHost.insertBefore(catDrag.ph, g);
           break;
         }
-        if (g === groups[groups.length-1]){
-          els.listHost.appendChild(catDrag.ph);
-        }
+        if (g === groups[groups.length-1]) els.listHost.appendChild(catDrag.ph);
       }
     };
 
     const onUp = ()=>{
-      pressed = false;
-      clearTimeout(pressTimer);
-
+      pressed = false; clearTimeout(pressTimer);
       window.removeEventListener('pointermove', onMove);
       window.removeEventListener('pointerup', onUp);
       window.removeEventListener('touchmove', onMove);
       window.removeEventListener('touchend', onUp);
 
-      // ▶︎ 드래그 시작 안 했으면(롱프레스 실패/취소) 잠금 해제
       if (!started) { unlockScroll(); return; }
 
-      // 드래그 종료 처리
       const {ghost, ph, group} = catDrag;
-      ghost.remove();
-      group.style.visibility='';
-      els.listHost.insertBefore(group, ph);
-      ph.remove();
+      ghost.remove(); group.style.visibility=''; els.listHost.insertBefore(group, ph); ph.remove();
       document.body.classList.remove('dragging-cat');
 
-      // 순서 반영
       const newOrderIds = $$('.cat-group', els.listHost).map(g=>g.dataset.catId);
       const before = categories.map(c=>({id:c.id, order:c.order??0}));
-      newOrderIds.forEach((id, idx)=>{
-        const c = categories.find(x=>x.id===id);
-        if (c) c.order = idx;
-      });
+      newOrderIds.forEach((id, idx)=>{ const c = categories.find(x=>x.id===id); if (c) c.order = idx; });
       saveAll(); renderTasks();
-
       toast('🏷️ 카테고리 순서 변경됨','success',{
-        undo: ()=>{
-          before.forEach(b=>{
-            const c = categories.find(x=>x.id===b.id);
-            if (c) c.order = b.order;
-          });
-          saveAll(); renderTasks();
-        }
+        undo: ()=>{ before.forEach(b=>{ const c=categories.find(x=>x.id===b.id); if(c) c.order=b.order; }); saveAll(); renderTasks(); }
       });
 
-      catDrag = null;
-      unlockScroll();  // ▶︎ 마지막에 스크롤 복원
+      catDrag = null; unlockScroll();
     };
 
     window.addEventListener('pointermove', onMove, {passive:false});
@@ -348,9 +330,9 @@ function enableCategoryDrag(groupEl, handleEl){
     window.addEventListener('touchend', onUp, {passive:false});
   };
 
-  // 핸들에 바인딩
   handleEl.addEventListener('pointerdown', onDown, {passive:false});
 }
+
 /* ===== 카드(행) 드래그 ===== */
 let rowDrag = null;
 function enableRowDrag(rowEl){
@@ -371,7 +353,7 @@ function enableRowDrag(rowEl){
     document.body.appendChild(ghost);
 
     rowDrag={ghost,ph,row:rowEl,group,startY:y0};
-    lockScroll();                                            /* ← 스크롤잠금 */
+    lockScroll();
   };
   const move=(y)=>{
     if(!rowDrag) return;
@@ -387,7 +369,7 @@ function enableRowDrag(rowEl){
   };
   const end=()=>{
     if(!rowDrag) return;
-    unlockScroll();                                         /* ← 스크롤복원 */
+    unlockScroll();
     const {ghost,ph,row,group}=rowDrag; ghost.remove(); row.style.visibility=''; group.insertBefore(row, ph); ph.remove();
 
     const ids=[...group.querySelectorAll('.task-row')].map(el=>el.dataset.id);
@@ -522,31 +504,58 @@ function renderCatCenterList(){
   });
 }
 
-/* ===== 일정 모달 ===== */
-function openTaskModal(){
+/* ===== 일정 모달 (생성/편집 공용) ===== */
+function openTaskModal(mode='create', task=null){
   renderCategoryOptions();
-  els.taskTitle.value=''; els.taskDue.value='';
+  editingTaskId = (mode==='edit' && task) ? task.id : null;
+
+  if (editingTaskId){
+    els.taskModalTitle.textContent = '일정 수정';
+    els.taskSave.textContent = '저장';
+    els.taskTitle.value = task.title || '';
+    els.taskDue.value = task.dueAt ? fmtDate(task.dueAt) : '';
+    els.taskCat.value = task.categoryId || 'inbox';
+  } else {
+    els.taskModalTitle.textContent = '일정 생성';
+    els.taskSave.textContent = '추가';
+    els.taskTitle.value = '';
+    els.taskDue.value = '';
+    els.taskCat.value = 'inbox';
+  }
   safeShowModal(els.dlgTask);
 }
+
 function saveTask(e){
   e?.preventDefault?.();
   const title=(els.taskTitle.value||'').trim();
   if(!title) return toast('⚠️ 제목을 입력하세요','error');
   const catId=els.taskCat.value||'inbox';
   const dueAt=els.taskDue.value ? new Date(els.taskDue.value+'T00:00:00').getTime() : null;
-  const orderMax=Math.max(-1,...tasks.map(t=>t.order??0));
-  const t={ id:uid(), title, done:false, categoryId:catId, dueAt, order:orderMax+1, createdAt:Date.now(), updatedAt:Date.now() };
-  tasks.push(t); saveAll(); renderTasks();
-  safeCloseModal(els.dlgTask);
-  toast('✅ 추가됨','success',{undo:()=>{tasks=tasks.filter(x=>x.id!==t.id); saveAll(); renderTasks();}});
+
+  if (editingTaskId){
+    const t = tasks.find(x=>x.id===editingTaskId);
+    if (!t) return safeCloseModal(els.dlgTask);
+    const before = {...t};
+    t.title = title;
+    t.categoryId = catId;
+    t.dueAt = dueAt;
+    t.updatedAt = Date.now();
+    saveAll(); renderTasks(); safeCloseModal(els.dlgTask); editingTaskId=null;
+    toast('✏️ 수정됨','success',{undo:()=>{ Object.assign(t, before); saveAll(); renderTasks(); }});
+  } else {
+    const orderMax=Math.max(-1,...tasks.map(t=>t.order??0));
+    const t={ id:uid(), title, done:false, categoryId:catId, dueAt, order:orderMax+1, createdAt:Date.now(), updatedAt:Date.now() };
+    tasks.push(t); saveAll(); renderTasks(); safeCloseModal(els.dlgTask);
+    toast('✅ 추가됨','success',{undo:()=>{tasks=tasks.filter(x=>x.id!==t.id); saveAll(); renderTasks();}});
+  }
 }
 
-/* ===== 바인딩 ===== */
+/* ===== 바인딩 & 초기화 ===== */
 function bind(){
-  els.btnCreateTask?.addEventListener('click', openTaskModal);
+  els.btnCreateTask?.addEventListener('click', ()=> openTaskModal('create'));
   els.btnCategoryCenter?.addEventListener('click', ()=> openCategoryCenter('manage'));
 
-  els.taskCancel?.addEventListener('click', ()=> safeCloseModal(els.dlgTask));
+  els.taskCancel?.addEventListener('click', ()=> { editingTaskId=null; safeCloseModal(els.dlgTask); });
   els.taskSave?.addEventListener('click', saveTask);
   els.taskTitle?.addEventListener('keydown', e=>{ if(e.key==='Enter') saveTask(e); });
 
@@ -574,17 +583,16 @@ function bind(){
     toast('🏷️ 카테고리 추가됨');
   });
 
-  // 다이얼로그 밖 클릭 닫기
+  // 다이얼로그 바깥 클릭 닫기
   [els.dlgTask, els.dlgCatCenter].forEach(dlg=>{
     dlg?.addEventListener('click', (e)=>{
       const panel=dlg.querySelector('.modal-body'); if(!panel) return;
       const r=panel.getBoundingClientRect();
       const inside=e.clientX>=r.left && e.clientX<=r.right && e.clientY>=r.top && e.clientY<=r.bottom;
-      if(!inside){ closeColorPopover(); safeCloseModal(dlg); }
+      if(!inside){ closeColorPopover(); editingTaskId=null; safeCloseModal(dlg); }
     });
   });
 }
 
-/* ===== init ===== */
 function init(){ loadAll(); renderCategoryOptions(); renderTasks(); bind(); }
 document.addEventListener('DOMContentLoaded', init);

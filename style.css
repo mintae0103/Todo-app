@@ -1,11 +1,10 @@
-html, body { overscroll-behavior-y: none; }  /* iOS 16+ 일부 브라우저에서 제스처 억제 */
 :root{
   --bg:#0f1115; --panel:#14161b; --text:#f7f7f7; --muted:#9aa0a6;
   --border:#222933; --accent:#3b82f6; --shadow:0 20px 40px rgba(0,0,0,.35);
   --sidebar-w:260px; --top-h:56px;
 }
 *{box-sizing:border-box}
-html,body{height:100%; overflow-x:hidden;}      /* ← 가로 스크롤 차단 */
+html,body{height:100%; overflow-x:hidden; overscroll-behavior-y:none;} /* 가로/당겨새로고침 억제 */
 body{margin:0;background:var(--bg);color:var(--text);
   font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Arial,sans-serif;
   user-select:none; -webkit-user-select:none;
@@ -42,28 +41,20 @@ button.secondary{background:#151a24; color:#f7f7f7; border:1px solid var(--borde
 body.menu-open .sidebar-drawer{display:flex; transform:none}
 body.menu-open .backdrop{opacity:1; pointer-events:auto}
 
-/* 모달 & 폼 (모바일 가로 넘침 방지) */
+/* 모달 & 폼 */
 dialog{border:0; padding:0; border-radius:12px;}
 .modal-body{
   background:#14161b; color:#f7f7f7; border:1px solid var(--border); border-radius:12px;
-  padding:16px;
-  width:clamp(320px, 92vw, 560px);   /* ← 반응형 폭 제한 */
-  max-width:92vw;
-  overflow-x:hidden;                  /* ← 가로 스크롤 차단 */
+  padding:16px; width:clamp(320px, 92vw, 560px); max-width:92vw; overflow-x:hidden;
+}
+@media (max-width:480px){
+  .modal-body{ width:88vw; max-width:88vw; padding:12px; font-size:14px; }
 }
 .modal-head{display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;}
 .modal-actions{display:flex; justify-content:flex-end; gap:8px; margin-top:12px;}
 label{display:flex; flex-direction:column; gap:6px; margin:8px 0;}
 input,select,button{font-size:16px; padding:10px; border-radius:10px; border:1px solid var(--border); background:#11151e; color:#fff}
 
-@media (max-width:480px){
-  .modal-body{
-    width: 88vw;       /* 폭 더 줄임 */
-    max-width: 88vw;
-    padding: 12px;     /* 패딩 줄여서 내용이 더 잘 보이도록 */
-    font-size: 14px;   /* 글자도 조금 작게 */
-  }
-}
 /* 팔레트 */
 .palette{display:flex; gap:8px; flex-wrap:wrap}
 .palette button{width:32px;height:32px;border-radius:50%;border:2px solid transparent;cursor:pointer}
@@ -76,10 +67,8 @@ input,select,button{font-size:16px; padding:10px; border-radius:10px; border:1px
 .tab{padding:8px 12px; border-radius:10px; border:1px solid var(--border); background:#11151e; color:#f7f7f7}
 .tab.active{background:#0f1b2e; border-color:#1e2a3d; outline:2px solid var(--accent)}
 
-/* 모바일에서 툴바가 넘치지 않게 2열 그리드 */
-.cat-toolbar{
-  display:grid; grid-template-columns:1fr auto; gap:8px; margin:6px 0 10px;
-}
+/* 모바일에서 관리툴바 2열 */
+.cat-toolbar{ display:grid; grid-template-columns:1fr auto; gap:8px; margin:6px 0 10px; }
 .cat-toolbar input{min-width:0;}
 .cat-toolbar select{min-width:0; max-width:44vw; white-space:nowrap; text-overflow:ellipsis; overflow:hidden;}
 
@@ -93,7 +82,6 @@ input,select,button{font-size:16px; padding:10px; border-radius:10px; border:1px
 .cat-item .btn{padding:6px 10px; border-radius:8px; border:1px solid var(--border); background:#1a1f29; color:#f7f7f7; white-space:nowrap}
 .cat-item .btn[disabled]{opacity:.5; cursor:not-allowed}
 @media (max-width:480px){
-  .modal-body{ padding:12px; }              /* 모바일 패딩 소폭 축소 */
   .cat-item .btn{padding:5px 8px; font-size:12px; border-radius:6px}
   .cat-item{padding:8px; gap:8px}
 }
@@ -113,7 +101,7 @@ input,select,button{font-size:16px; padding:10px; border-radius:10px; border:1px
 
 /* 할 일 카드 */
 .task-row{overflow:hidden; display:grid;
-  grid-template-columns:44px 1fr 44px; grid-template-rows:auto auto;
+  grid-template-columns:44px 1fr 64px; grid-template-rows:auto auto;
   grid-template-areas:"check title del" "check meta del";
   align-items:center; gap:6px 10px; border:1px solid var(--border); border-radius:12px; padding:10px; margin:6px 0; background:#11151e; touch-action:none}
 .task-row .check{grid-area:check}
