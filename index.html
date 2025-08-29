@@ -27,45 +27,28 @@
     </nav>
 
     <!-- 메인 -->
-    <main class="main" id="main" role="main">
-      <!-- 할 일 섹션 -->
+    <main class="main" role="main">
+      <!-- 할 일 -->
       <section id="todo" class="board" aria-labelledby="todo-title">
         <header class="pane-head">
           <h2 id="todo-title">할 일 리스트</h2>
           <div class="todo-toolbar">
             <button id="btnCreateTask" class="primary" aria-label="일정 생성">➕ 일정 생성</button>
-            <button id="btnCreateCategory" class="secondary" aria-label="카테고리 생성">🏷️ 카테고리<wbr> 생성</button>
-            <button id="btnManageCategories" class="secondary" aria-label="카테고리 관리">🗂️ 카테고리 관리</button>
+            <button id="btnCategoryCenter" class="secondary" aria-label="카테고리">🏷️ 카테고리</button>
           </div>
         </header>
-
-        <!-- 할 일 목록 (카테고리별 그룹 헤더 + 항목) -->
         <div id="taskList" role="list" aria-label="할 일 목록"></div>
       </section>
 
-      <!-- 캘린더 섹션 -->
-      <section id="calendar" class="board" aria-labelledby="cal-title" hidden>
-        <h2 id="cal-title">캘린더 일정</h2>
-      </section>
-
-      <!-- 공부 시간 섹션 -->
-      <section id="focus" class="board" aria-labelledby="focus-title" hidden>
-        <h2 id="focus-title">순수공부 시간</h2>
-      </section>
-
-      <!-- 메모 섹션 -->
-      <section id="memo" class="board" aria-labelledby="memo-title" hidden>
-        <h2 id="memo-title">메모</h2>
-      </section>
-
-      <!-- 설정 섹션 -->
-      <section id="settings" class="board" aria-labelledby="settings-title" hidden>
-        <h2 id="settings-title">설정</h2>
-      </section>
+      <!-- 자리만 -->
+      <section id="calendar" class="board" hidden><h2>캘린더 일정</h2></section>
+      <section id="focus" class="board" hidden><h2>순수공부 시간</h2></section>
+      <section id="memo" class="board" hidden><h2>메모</h2></section>
+      <section id="settings" class="board" hidden><h2>설정</h2></section>
     </main>
   </div>
 
-  <!-- 모바일: 오프캔버스 사이드바 + 배경 -->
+  <!-- 모바일 오프캔버스 -->
   <div class="backdrop" id="backdrop" hidden></div>
   <nav class="sidebar-drawer" id="drawer" aria-label="사이드바 메뉴(오프캔버스)" hidden>
     <div class="nav">
@@ -88,11 +71,9 @@
       <label>제목
         <input id="taskTitleInput" placeholder="예: 수학 문제풀이" maxlength="120" required>
       </label>
-
       <label>기한
         <input id="taskDueInput" type="date">
       </label>
-
       <label>카테고리
         <select id="taskCategorySelect"></select>
       </label>
@@ -103,111 +84,74 @@
     </form>
   </dialog>
 
-  <!-- 모달: 카테고리 생성 (팔레트 + 자유선택) -->
-  <dialog id="categoryModal" aria-labelledby="categoryModalTitle">
-    <form method="dialog" class="modal-body">
+  <!-- 모달: 카테고리 센터(탭 2개) -->
+  <dialog id="categoryCenterModal" aria-labelledby="catCenterTitle">
+    <div class="modal-body">
       <header class="modal-head">
-        <h3 id="categoryModalTitle">카테고리 생성</h3>
-        <button id="catCancelBtn" value="cancel" aria-label="닫기">✕</button>
+        <h3 id="catCenterTitle">카테고리</h3>
+        <button id="catCenterCloseBtn" value="cancel" aria-label="닫기">✕</button>
       </header>
 
-      <label>이름
-        <input id="catNameInput" placeholder="예: 공부" maxlength="40" required>
-      </label>
-
-      <!-- 팔레트 + 기타 버튼 -->
-      <label>색상</label>
-      <div id="catColorPalette" class="palette">
-        <button type="button" data-color="#3b82f6" style="background:#3b82f6" aria-label="파랑"></button>
-        <button type="button" data-color="#22c55e" style="background:#22c55e" aria-label="초록"></button>
-        <button type="button" data-color="#f59e0b" style="background:#f59e0b" aria-label="주황"></button>
-        <button type="button" data-color="#ef4444" style="background:#ef4444" aria-label="빨강"></button>
-        <button type="button" data-color="#a855f7" style="background:#a855f7" aria-label="보라"></button>
-        <button type="button" data-color="#64748b" style="background:#64748b" aria-label="회청"></button>
-        <button type="button" id="catColorMore" class="more" aria-label="기타 색상">…</button>
+      <div class="tabs" role="tablist" aria-label="카테고리 탭">
+        <button class="tab active" role="tab" aria-selected="true" aria-controls="catTabManage" id="tabManage">목록/관리</button>
+        <button class="tab" role="tab" aria-selected="false" aria-controls="catTabCreate" id="tabCreate">새로 만들기</button>
       </div>
-      <input id="catColorInput" type="hidden" value="#3b82f6" />
-      <input id="catColorPicker" type="color" value="#3b82f6" class="visually-hidden" />
 
-      <footer class="modal-actions">
-        <button id="catSaveBtn" class="primary" value="default">저장</button>
-      </footer>
-    </form>
+      <section id="catTabManage" class="tab-panel" role="tabpanel" aria-labelledby="tabManage">
+        <div class="cat-toolbar">
+          <input id="catSearchInput" placeholder="카테고리 검색" />
+          <select id="catSortSelect" aria-label="정렬">
+            <option value="order">정렬: 사용자 순서</option>
+            <option value="name">정렬: 이름</option>
+            <option value="count">정렬: 작업 개수</option>
+          </select>
+        </div>
+        <ul id="catCenterList" class="cat-center-list" aria-label="카테고리 목록"></ul>
+        <p class="hint">기본(Inbox)은 삭제/이름변경할 수 없습니다. 삭제 시 해당 카테고리의 일정은 기본으로 이동합니다.</p>
+      </section>
+
+      <section id="catTabCreate" class="tab-panel" role="tabpanel" aria-labelledby="tabCreate" hidden>
+        <label>이름
+          <input id="newCatName" placeholder="예: 공부" maxlength="40" required>
+        </label>
+        <label>색상</label>
+        <div id="newCatPalette" class="palette">
+          <button type="button" data-color="#3b82f6" style="background:#3b82f6" aria-label="파랑"></button>
+          <button type="button" data-color="#22c55e" style="background:#22c55e" aria-label="초록"></button>
+          <button type="button" data-color="#f59e0b" style="background:#f59e0b" aria-label="주황"></button>
+          <button type="button" data-color="#ef4444" style="background:#ef4444" aria-label="빨강"></button>
+          <button type="button" data-color="#a855f7" style="background:#a855f7" aria-label="보라"></button>
+          <button type="button" data-color="#64748b" style="background:#64748b" aria-label="회청"></button>
+          <button type="button" id="newCatMore" class="more" aria-label="기타 색상">…</button>
+        </div>
+        <input id="newCatColor" type="hidden" value="#3b82f6" />
+        <input id="newCatColorPicker" type="color" value="#3b82f6" class="visually-hidden" />
+        <footer class="modal-actions">
+          <button id="newCatSaveBtn" class="primary">저장</button>
+        </footer>
+      </section>
+    </div>
   </dialog>
 
-  <!-- 모달: 카테고리 관리(목록/삭제) -->
-  <dialog id="categoryManageModal" aria-labelledby="categoryManageModalTitle">
-    <form method="dialog" class="modal-body">
-      <header class="modal-head">
-        <h3 id="categoryManageModalTitle">카테고리 관리</h3>
-        <button id="catManageCloseBtn" value="cancel" aria-label="닫기">✕</button>
-      </header>
-
-      <ul id="catList" aria-label="카테고리 목록" class="cat-list"></ul>
-
-      <p class="hint">
-        기본 Inbox는 삭제할 수 없습니다. 카테고리를 삭제하면 해당 일정은 Inbox로 이동합니다.
-      </p>
-    </form>
-  </dialog>
-
-  <!-- 토스트 영역 -->
+  <!-- 토스트 -->
   <div id="toastHost" aria-live="polite" aria-atomic="true"></div>
 
-  <!-- (네비게이션 전용) 사이드바/해시 전환 스크립트 + 우클릭/선택 방지 -->
+  <!-- 네비(햄버거) + 우클릭 방지 -->
   <script>
-    // 햄버거: 오프캔버스 열고 닫기
     (function(){
       const btn = document.getElementById('btnMenu');
       const drawer = document.getElementById('drawer');
       const backdrop = document.getElementById('backdrop');
-
-      function openMenu(){
-        document.body.classList.add('menu-open');
-        btn?.setAttribute('aria-expanded','true');
-        drawer.hidden = false; backdrop.hidden = false;
-        setTimeout(()=> drawer.querySelector('a')?.focus(), 0);
-      }
-      function closeMenu(){
-        document.body.classList.remove('menu-open');
-        btn?.setAttribute('aria-expanded','false');
-        const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-        if (!reduce){ setTimeout(()=>{ drawer.hidden = true; backdrop.hidden = true; }, 200); }
-        else { drawer.hidden = true; backdrop.hidden = true; }
-      }
-      btn?.addEventListener('click', ()=>{
-        const open = document.body.classList.contains('menu-open');
-        open ? closeMenu() : openMenu();
-      });
+      function openMenu(){ document.body.classList.add('menu-open'); btn?.setAttribute('aria-expanded','true'); drawer.hidden=false; backdrop.hidden=false; }
+      function closeMenu(){ document.body.classList.remove('menu-open'); btn?.setAttribute('aria-expanded','false'); setTimeout(()=>{drawer.hidden=true; backdrop.hidden=true;},200); }
+      btn?.addEventListener('click', ()=> document.body.classList.contains('menu-open') ? closeMenu() : openMenu());
       backdrop?.addEventListener('click', closeMenu);
-      drawer?.addEventListener('click', (e)=>{ if (e.target.tagName === 'A') closeMenu(); });
-      window.addEventListener('keydown', (e)=>{ if (e.key === 'Escape' && document.body.classList.contains('menu-open')) closeMenu(); });
+      drawer?.addEventListener('click', e=>{ if(e.target.tagName==='A') closeMenu(); });
+      window.addEventListener('keydown', e=>{ if(e.key==='Escape' && document.body.classList.contains('menu-open')) closeMenu(); });
     })();
-
-    // 섹션 표시/숨김 (해시 기반)
-    (function(){
-      function showSection(id){
-        document.querySelectorAll('main .board').forEach(s => s.hidden = true);
-        const el = document.getElementById(id);
-        if (el) el.hidden = false;
-        document.querySelectorAll('.nav a').forEach(a => {
-          a.classList.toggle('active', a.getAttribute('href') === '#' + id);
-          if (a.classList.contains('active')) a.setAttribute('aria-current','page');
-          else a.removeAttribute('aria-current');
-        });
-      }
-      window.addEventListener('hashchange', ()=>{
-        const id = (location.hash || '#todo').slice(1);
-        showSection(id);
-      });
-      showSection((location.hash || '#todo').slice(1)); // 초기
-    })();
-
-    // 우클릭 비활성화 + 개발 중엔 원하면 주석 처리 가능
-    window.addEventListener('contextmenu', (e)=> e.preventDefault());
+    window.addEventListener('contextmenu', e=> e.preventDefault());
   </script>
 
-  <!-- 할 일 리스트 전용 기능 -->
   <script src="todo.js"></script>
 </body>
 </html>
