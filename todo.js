@@ -1,4 +1,4 @@
-// === todo.js — 메타 하단 모드(날짜 D-표기 + 카테고리 점+이름), 카테고리 관리, 드래그 정렬, 기본 카테고리 보호 ===
+// === todo.js — 카테고리 그룹 헤더, 모바일 토스트 축소(CSS), 카테고리 관리, 드래그 정렬, 기본 카테고리 보호 ===
 
 // ---------- Utilities ----------
 const $  = (s, r=document) => r.querySelector(s);
@@ -65,10 +65,10 @@ const els = {
   // category create modal
   dlgCat:             $('#categoryModal'),
   catName:            $('#catNameInput'),
-  catColor:           $('#catColorInput'),     // hidden input (팔레트/피커 결과)
+  catColor:           $('#catColorInput'),
   catSave:            $('#catSaveBtn'),
   catCancel:          $('#catCancelBtn'),
-  // color palette (옵션2)
+  // color palette
   catPalette:         $('#catColorPalette'),
   catColorPicker:     $('#catColorPicker'),
   catMoreBtn:         $('#catColorMore'),
@@ -106,9 +106,8 @@ function dueBadge(ms){
   if (diff === 0) return '오늘';
   return `D-${diff}`;
 }
-function dueText(ms){ return ms ? dueBadge(ms) : ''; } // 전 기기 공통 축약 표기
 
-// ---------- Renderers ----------
+// ---------- Renderers (카테고리 그룹 렌더) ----------
 function renderCategoryOptions(){
   if (!els.taskCat) return;
   els.taskCat.innerHTML = categories
@@ -116,6 +115,7 @@ function renderCategoryOptions(){
     .map(c=>`<option value="${c.id}">${c.name}</option>`)
     .join('');
 }
+
 function renderCategoryManageList(){
   if (!els.catList) return;
   els.catList.innerHTML = '';
@@ -148,71 +148,99 @@ function renderCategoryManageList(){
 function renderTasks(){
   const host = els.listHost;
   host.innerHTML = '';
-  // order 우선, 동점은 createdAt
-  const list = [...tasks].sort((a,b)=>{
-    const ao = a.order ?? 0, bo = b.order ?? 0;
-    return ao === bo ? (a.createdAt??0)-(b.createdAt??0) : ao - bo;
+
+  // 카테고리별 묶기
+  const catsById = Object.fromEntries(categories.map(c=>[c.id, c]));
+  const grouped = new Map(); // catId -> tasks[]
+  tasks.forEach(t=>{
+    const key = t.categoryId || 'inbox';
+    if (!grouped.has(key)) grouped.set(key, []);
+    grouped.get(key).push(t);
   });
 
-  list.forEach(t=>{
-    const cat = categories.find(c=>c.id===t.categoryId) || { name:'Inbox', color:'#3b82f6' };
+  // 카테고리 순서
+  const catOrder = categories.slice().sort((a,b)=>(a.order??0)-(b.order??0));
+  const nonEmptyCats = catOrder.filter(c => (grouped.get(c.id) || []).length > 0);
+  const showHeaders = nonEmptyCats.length > 1; // 여러 카테고리일 때만 헤더
 
-    // 행
-    const row = document.createElement('div');
-    row.className = 'task-row';
-    row.dataset.id = t.id;
-    row.setAttribute('role','listitem');
-
-    // 체크(완료 토글)
-    const btnDone = document.createElement('button');
-    btnDone.textContent = t.done ? '✅' : '⬜️';
-    btnDone.setAttribute('aria-pressed', String(!!t.done));
-    btnDone.className = 'check no-drag';
-    btnDone.addEventListener('click', ()=>{
-      t.done = !t.done; t.updatedAt = Date.now(); saveAll(); renderTasks();
+  nonEmptyCats.forEach(cat=>{
+    const catTasks = (grouped.get(cat.id) || []).slice().sort((a,b)=>{
+      const ao = a.order ?? 0, bo = b.order ?? 0;
+      return ao === bo ? (a.createdAt??0)-(b.createdAt??0) : ao - bo;
     });
 
-    // 제목
-    const title = document.createElement('div');
-    title.className = 'title';
-    title.textContent = t.title;
-    if (t.done) title.style.cssText = 'color:#9aa0a6;text-decoration:line-through';
+    // 헤더
+    if (showHeaders){
+      const header = document.createElement('div');
+      header.className = 'cat-header';
+      const dot = document.createElement('span');
+      dot.className = 'dot';
+      dot.style.background = cat.color || '#3b82f6';
+      const name = document.createElement('span');
+      name.textContent = (cat.id === 'inbox') ? '기본' : cat.name;
+      header.append(dot, name);
+      host.appendChild(header);
+    }
 
-    // 삭제
-    const btnDel = document.createElement('button');
-    btnDel.textContent = '🗑️';
-    btnDel.setAttribute('aria-label','삭제');
-    btnDel.className = 'del no-drag';
-    btnDel.addEventListener('click', ()=>{
-      const backup = { ...t };
-      tasks = tasks.filter(x=>x.id!==t.id); saveAll(); renderTasks();
-      toast('🗑️ 삭제됨','success',{ undo:()=>{ tasks.push(backup); saveAll(); renderTasks(); }});
+    // 항목
+    catTasks.forEach(t=>{
+      const catRef = catsById[t.categoryId] || { id:'inbox', name:'기본', color:'#3b82f6' };
+
+      const row = document.createElement('div');
+      row.className = 'task-row';
+      row.dataset.id = t.id;
+      row.setAttribute('role','listitem');
+
+      // 체크
+      const btnDone = document.createElement('button');
+      btnDone.textContent = t.done ? '✅' : '⬜️';
+      btnDone.setAttribute('aria-pressed', String(!!t.done));
+      btnDone.className = 'check no-drag';
+      btnDone.addEventListener('click', ()=>{
+        t.done = !t.done; t.updatedAt = Date.now(); saveAll(); renderTasks();
+      });
+
+      // 제목
+      const title = document.createElement('div');
+      title.className = 'title';
+      title.textContent = t.title;
+      if (t.done) title.style.cssText = 'color:#9aa0a6;text-decoration:line-through';
+
+      // 삭제
+      const btnDel = document.createElement('button');
+      btnDel.textContent = '🗑️';
+      btnDel.setAttribute('aria-label','삭제');
+      btnDel.className = 'del no-drag';
+      btnDel.addEventListener('click', ()=>{
+        const backup = { ...t };
+        tasks = tasks.filter(x=>x.id!==t.id); saveAll(); renderTasks();
+        toast('🗑️ 삭제됨','success',{ undo:()=>{ tasks.push(backup); saveAll(); renderTasks(); }});
+      });
+
+      // 하단 메타
+      const meta = document.createElement('div');
+      meta.className = 'meta';
+
+      const dueEl = document.createElement('span');
+      dueEl.className = 'date';
+      dueEl.textContent = t.dueAt ? dueBadge(t.dueAt) : '';
+      dueEl.title = t.dueAt ? fmtDate(t.dueAt) : '';
+
+      const dot = document.createElement('span');
+      dot.className = 'dot';
+      dot.style.background = catRef.color || '#3b82f6';
+
+      const catName = document.createElement('span');
+      catName.className = 'cat-name';
+      catName.textContent = (catRef.id === 'inbox') ? '기본' : catRef.name;
+
+      meta.append(dueEl, dot, catName);
+      row.append(btnDone, title, btnDel, meta);
+      host.appendChild(row);
+
+      // 드래그 연결
+      enableRowDrag(row);
     });
-
-    // 하단 메타(날짜 축약 + 카테고리 점+이름)
-    const meta = document.createElement('div');
-    meta.className = 'meta';
-
-    const dueEl = document.createElement('span');
-    dueEl.className = 'date';
-    dueEl.textContent = dueText(t.dueAt);              // 축약 표기 (전 기기)
-    dueEl.title = t.dueAt ? fmtDate(t.dueAt) : '';     // 길게 누르면 절대날짜 툴팁
-
-    const dot = document.createElement('span');
-    dot.className = 'dot';
-    dot.style.background = cat.color;
-
-    const catName = document.createElement('span');
-    catName.className = 'cat-name';
-    catName.textContent = cat.name;
-
-    // 조립
-    meta.append(dueEl, dot, catName);
-    row.append(btnDone, title, btnDel, meta);
-    host.appendChild(row);
-
-    // 드래그 연결(카드 전체, 버튼 제외)
-    enableRowDrag(row);
   });
 }
 
@@ -228,7 +256,7 @@ function wireDialogOutsideClose(dlg){
   });
 }
 
-// ---------- Palette selection (옵션2) ----------
+// ---------- Palette selection ----------
 function selectCatColor(color){
   if (!color) return;
   if (els.catColor)       els.catColor.value = color;
@@ -337,7 +365,6 @@ function enableRowDrag(rowEl){
   let pressTimer = null;
 
   const start = (yStart)=>{
-    const hostRect = els.listHost.getBoundingClientRect();
     const rowRect  = rowEl.getBoundingClientRect();
 
     // placeholder
@@ -347,7 +374,7 @@ function enableRowDrag(rowEl){
     rowEl.style.visibility = 'hidden';
     els.listHost.insertBefore(ph, rowEl.nextSibling);
 
-    // ghost: 실제 넓이/그리드 유지
+    // ghost
     const ghost = rowEl.cloneNode(true);
     ghost.querySelectorAll('button').forEach(b=> b.setAttribute('disabled','true'));
     const rowStyle = window.getComputedStyle(rowEl);
@@ -368,7 +395,7 @@ function enableRowDrag(rowEl){
     document.body.appendChild(ghost);
     els.listHost.classList.add('dragging');
 
-    drag = { ghost, ph, startY:yStart, lastY:yStart, row:rowEl, hostTop:hostRect.top, hostBottom:hostRect.bottom };
+    drag = { ghost, ph, startY:yStart, lastY:yStart, row:rowEl };
   };
 
   const move = (y)=>{
@@ -428,20 +455,19 @@ function enableRowDrag(rowEl){
   };
 
   const onPointerDown = (e)=>{
-    // 카드 전체에서 드래그 시작, 단 클릭용 버튼에서는 제외
     if (e.target.closest('.no-drag')) return;
     if (e.pointerType === 'mouse' && e.button !== 0) return;
     const y0 = e.clientY ?? e.touches?.[0]?.clientY ?? 0;
 
     e.preventDefault();
-    const pressTimer = setTimeout(()=> start(y0), 220);
+    const press = setTimeout(()=> start(y0), 220);
 
     const onMove = (ev)=>{
       const y = ev.clientY ?? ev.touches?.[0]?.clientY ?? 0;
       if (drag) move(y);
     };
     const onUp = ()=>{
-      clearTimeout(pressTimer);
+      clearTimeout(press);
       window.removeEventListener('pointermove', onMove);
       window.removeEventListener('pointerup', onUp);
       window.removeEventListener('touchmove', onMove);
@@ -481,7 +507,7 @@ function bind(){
   // Enter to submit in task title
   els.taskTitle?.addEventListener('keydown', (e)=>{ if (e.key==='Enter') saveTask(e); });
 
-  // 팔레트 조작 (옵션2)
+  // 팔레트 조작
   els.catPalette?.addEventListener('click', (e)=>{
     const btn = e.target.closest('button[data-color]');
     if (!btn) return;

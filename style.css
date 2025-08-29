@@ -5,7 +5,13 @@
   }
   *{box-sizing:border-box}
   html,body{height:100%}
-  body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Arial,sans-serif}
+  body{
+    margin:0;background:var(--bg);color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Arial,sans-serif;
+    /* 텍스트 선택 방지 (요청) */
+    user-select:none;
+    -webkit-user-select:none;
+  }
   
   /* 레이아웃 */
   .app{
@@ -102,7 +108,32 @@
   .hint{ color:#9aa0a6; font-size:12px; margin-top:10px }
   
   /* 토스트 */
-  #toastHost{ position:fixed; top:16px; right:16px; display:flex; flex-direction:column; gap:8px; z-index:1000; }
+  #toastHost{
+    position:fixed; top:16px; right:16px; display:flex; flex-direction:column; gap:8px; z-index:1000;
+  }
+  #toastHost .toast{
+    background:#14161b;border:1px solid var(--border);color:#f7f7f7;
+    padding:10px 12px;border-radius:10px;display:flex;align-items:center;gap:12px;
+    box-shadow:0 12px 24px rgba(0,0,0,.25); font-size:14px;
+  }
+  /* 모바일(아이폰/갤럭시) 토스트 축소 */
+  @media (max-width:480px){
+    #toastHost{ top:10px; right:10px; gap:6px; }
+    #toastHost .toast{ padding:8px 10px; border-radius:8px; font-size:12px; }
+    #toastHost .toast button{ padding:4px 8px; border-radius:6px; font-size:12px; }
+  }
+  
+  /* ===== 카테고리 헤더 (그룹 표시) ===== */
+  .cat-header{
+    display:flex; align-items:center; gap:8px;
+    margin:14px 0 6px;
+    color: var(--muted);
+    font-size: 13px;
+  }
+  .cat-header .dot{
+    width:10px; height:10px; border-radius:50%;
+    border:1px solid #0004;
+  }
   
   /* ===== 카드: 상단(체크/제목/삭제) + 하단 메타(날짜·카테고리) ===== */
   .task-row{
@@ -149,10 +180,10 @@
     body.menu-open .backdrop{ opacity:1; pointer-events:auto }
   }
   
-  /* 아이폰: 툴바 한 줄로 보이게 */
+  /* 아이폰: 툴바 한 줄/두 줄 대응 */
   @media (max-width: 480px){
     .todo-toolbar{ flex-wrap:nowrap; overflow-x:auto; -webkit-overflow-scrolling:touch; gap:4px; }
-    .todo-toolbar button{ font-size:13px; padding:6px 10px; border-radius:6px; flex:1; min-width:0; }
+    .todo-toolbar button{ font-size:13px; padding:6px 10px; border-radius:6px; flex:1; min-width:0; line-height:1.15; text-align:center; }
   
     /* 카드 압축 */
     .task-row{

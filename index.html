@@ -34,12 +34,12 @@
           <h2 id="todo-title">할 일 리스트</h2>
           <div class="todo-toolbar">
             <button id="btnCreateTask" class="primary" aria-label="일정 생성">➕ 일정 생성</button>
-            <button id="btnCreateCategory" class="secondary" aria-label="카테고리 생성">🏷️ 카테고리 생성</button>
+            <button id="btnCreateCategory" class="secondary" aria-label="카테고리 생성">🏷️ 카테고리<wbr> 생성</button>
             <button id="btnManageCategories" class="secondary" aria-label="카테고리 관리">🗂️ 카테고리 관리</button>
           </div>
         </header>
 
-        <!-- 할 일 목록 -->
+        <!-- 할 일 목록 (카테고리별 그룹 헤더 + 항목) -->
         <div id="taskList" role="list" aria-label="할 일 목록"></div>
       </section>
 
@@ -77,7 +77,7 @@
     </div>
   </nav>
 
-  <!-- 모달: 일정 생성 (우선순위 없음) -->
+  <!-- 모달: 일정 생성 -->
   <dialog id="taskModal" aria-labelledby="taskModalTitle">
     <form method="dialog" class="modal-body">
       <header class="modal-head">
@@ -154,7 +154,7 @@
   <!-- 토스트 영역 -->
   <div id="toastHost" aria-live="polite" aria-atomic="true"></div>
 
-  <!-- (네비게이션 전용) 사이드바/해시 전환 스크립트 -->
+  <!-- (네비게이션 전용) 사이드바/해시 전환 스크립트 + 우클릭/선택 방지 -->
   <script>
     // 햄버거: 오프캔버스 열고 닫기
     (function(){
@@ -202,6 +202,9 @@
       });
       showSection((location.hash || '#todo').slice(1)); // 초기
     })();
+
+    // 우클릭 비활성화 + 개발 중엔 원하면 주석 처리 가능
+    window.addEventListener('contextmenu', (e)=> e.preventDefault());
   </script>
 
   <!-- 할 일 리스트 전용 기능 -->
