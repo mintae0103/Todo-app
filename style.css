@@ -184,3 +184,40 @@ a:focus-visible,button:focus-visible{outline:2px solid var(--accent); outline-of
   .cal-weekdays{font-size:11px}
   .day-item{padding:6px}
 }
+
+/* === Calendar Responsive Fix === */
+@media (max-width:600px){
+  /* 달력 전체 여백 줄이기 */
+  .cal-grid{gap:4px}
+  .cal-weekdays{font-size:11px; gap:4px}
+  .cal-weekdays span{padding:4px 2px}
+
+  /* 날짜 셀: 더 컴팩트하게 */
+  .cal-cells{gap:4px}
+  .cal-cell{
+    min-height:72px;
+    padding:4px;
+    border-radius:8px;
+  }
+  .cal-cell .date{font-size:11px}
+
+  /* 칩은 글자 줄이기 */
+  .cal-chip{font-size:10px; padding:4px 5px; gap:4px}
+  .cal-chip .dot{width:8px; height:8px}
+
+  .cal-more{font-size:10px}
+
+  /* Day 패널도 조금 줄이기 */
+  .day-panel{padding:8px}
+  .day-header{flex-direction:column; align-items:flex-start; gap:6px}
+  .day-title strong{font-size:14px}
+  .day-actions{align-self:flex-end}
+  .day-item{padding:6px; font-size:13px}
+}
+
+/* 초소형 화면 (아이폰 SE/갤럭시 A 시리즈) */
+@media (max-width:400px){
+  .cal-cell{min-height:64px}
+  .cal-chip{font-size:9px; padding:3px 4px}
+  .day-title strong{font-size:13px}
+}
