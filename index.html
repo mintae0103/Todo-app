@@ -81,9 +81,19 @@
         <header class="pane-head">
           <h2 id="focus-title">순수공부 시간</h2>
           <div class="focus-toolbar">
+            <!-- TAGS: 포커스 태그 선택 + 태그 관리 버튼 -->
+            <select id="focusTagSelect">
+              <option value="">태그 선택(옵션)</option>
+            </select>
+            <button id="btnManageTags" class="secondary" type="button">🏷️ 태그 관리</button>
+            <!-- /TAGS -->
             <button id="focusStart" class="primary">▶︎ 타이머 시작</button>
           </div>
         </header>
+        <!-- TAGS: 현재 선택된 태그 칩(옵션) -->
+        <div id="focusTagChips"></div>
+        <!-- /TAGS -->
+
         <div class="muted" style="margin-top:8px">
           타이머 시작 시 전체 화면으로 전환되고, 오버레이에 시간이 표시됩니다.
           앱을 벗어나면 자동으로 일시정지됩니다.
@@ -242,18 +252,21 @@
           </select>
         </label>
 
-        <label id="goalTargetLabel">목표 시간(분)
-          <input id="goalTarget" type="number" min="1" step="1" placeholder="예) 600"/>
-        </label>
-
-        <!-- 시간 프리셋 -->
+        <!-- 시간형 목표 프리셋 버튼이 동적으로 채워집니다 -->
         <div id="goalQuick" style="display:flex; gap:6px; flex-wrap:wrap; margin-top:6px"></div>
 
-        <!-- 체크 목표 전용: 루틴 선택 -->
+        <!-- 체크형 목표일 때만 보이는 루틴 선택 -->
         <div id="goalRoutineFilterWrap" style="margin-top:10px; display:none">
           <div style="margin-bottom:4px">집계할 루틴 선택(선택 안 하면 전체 루틴):</div>
           <div id="goalRoutineList" style="display:flex; flex-wrap:wrap; gap:8px"></div>
         </div>
+
+        <!-- TAGS: 목표의 태그 선택(복수) -->
+        <div id="goalTagFilterWrap" style="margin-top:10px;">
+          <div class="muted" style="margin-bottom:4px">집계할 태그 선택(선택 안 하면 전체):</div>
+          <div id="goalTagList" style="display:flex; flex-wrap:wrap; gap:8px"></div>
+        </div>
+        <!-- /TAGS -->
 
         <div class="modal-actions">
           <button id="goalSave" type="submit" class="primary">저장</button>
@@ -316,6 +329,26 @@
     </div>
   </div>
 
+  <!-- TAGS: 태그 관리 모달 -->
+  <dialog id="tagModal">
+    <div class="modal-body">
+      <div class="modal-head">
+        <h3>태그 관리</h3>
+        <button id="tagClose">✕</button>
+      </div>
+      <form id="tagForm" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <input id="tagName" type="text" placeholder="태그 이름" required />
+        <div class="tag-palette" id="tagPalette"></div>
+        <label style="display:inline-flex;align-items:center;gap:6px">
+          직접 색상<input id="tagCustomColor" type="color" value="#6E56CF"/>
+        </label>
+        <button id="tagAdd" type="submit" class="primary">추가</button>
+      </form>
+      <div class="tag-list" id="tagList"></div>
+    </div>
+  </dialog>
+  <!-- /TAGS -->
+
   <!-- 메뉴/드로어 토글 & 해시 네비 (간단 스크립트) -->
   <script defer>
     (function(){
@@ -353,10 +386,21 @@
     })();
   </script>
 
-  <!-- 외부 스크립트 -->
+  <!-- 기존 스크립트들 -->
   <script src="todo.js" defer></script>
   <script src="calendar.js" defer></script>
   <script src="focus.js" defer></script>
   <script src="goals.js" defer></script>
+  <!-- TAGS: 태그 스크립트 추가 -->
+  <script src="tags.js" defer></script>
+
+  <!-- 🔹 Eruda: 모바일 콘솔 라이브러리 -->
+  <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
+  <script>
+    window.addEventListener('load', () => {
+      eruda.init();
+      console.log("✅ Eruda 콘솔이 준비되었습니다.");
+    });
+  </script>
 </body>
 </html>

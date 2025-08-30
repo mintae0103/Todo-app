@@ -241,3 +241,18 @@ button.small {
 }
 
 #toastHost .toast button{ font-size:12px; padding:4px 8px; border-radius:6px; }
+
+[hidden] { display: none !important; }
+dialog:not([open]) { display: none !important; }
+
+
+/* === Tags === */
+.tag-chip{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border:1px solid var(--border);border-radius:999px;font-size:.9rem}
+.tag-dot{width:10px;height:10px;border-radius:50%}
+.tag-palette{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
+.tag-swatch{width:24px;height:24px;border-radius:50%;border:1px solid var(--border);cursor:pointer}
+.tag-swatch.selected{outline:2px solid #fff}
+.tag-list{display:flex;flex-direction:column;gap:6px;max-height:40vh;overflow:auto}
+.tag-row{display:flex;align-items:center;gap:8px;border:1px solid var(--border);border-radius:10px;padding:8px;background:#11151e}
+.tag-row .drag{cursor:grab}
+#goalTagList,#focusTagChips{display:flex;flex-wrap:wrap;gap:8px}
